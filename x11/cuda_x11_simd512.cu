@@ -783,16 +783,22 @@ void x11_simd512_cpu_hash_64(int thr_id, uint32_t threads, uint32_t startNounce,
 		dim3 block(simdthreads);
 		dim3 grid((threads + simdthreads - 1) / simdthreads);
 		x11_simd512_gpu_expand_64 << <grid8, block, 0, gpustream[thr_id] >> > (threads, startNounce, (uint64_t*)d_hash, d_temp4[thr_id]);
+		CUDA_SAFE_CALL(cudaDeviceSynchronize());
 		x11_simd512_gpu_compress_64_maxwell << < grid, block, 0, gpustream[thr_id] >> > (threads, startNounce, (uint64_t*)d_hash, d_temp4[thr_id]);
+		CUDA_SAFE_CALL(cudaDeviceSynchronize());
 	}
 	else 
 	{
 		dim3 block(TPB);
 		dim3 grid((threads + TPB - 1) / TPB);
 		x11_simd512_gpu_expand_64 << <grid8, block, 0, gpustream[thr_id] >> > (threads, startNounce, (uint64_t*)d_hash, d_temp4[thr_id]);
+		CUDA_SAFE_CALL(cudaDeviceSynchronize());
 		x11_simd512_gpu_compress1_64 << < grid, block, 0, gpustream[thr_id] >> > (threads, startNounce, (uint64_t*)d_hash, d_temp4[thr_id], d_state[thr_id]);
+		CUDA_SAFE_CALL(cudaDeviceSynchronize());
 		x11_simd512_gpu_compress2_64 << < grid, block, 0, gpustream[thr_id]>>> (threads, startNounce, (uint64_t*)d_hash, d_temp4[thr_id], d_state[thr_id]);
+		CUDA_SAFE_CALL(cudaDeviceSynchronize());
 		x11_simd512_gpu_final_64 << <grid, block, 0, gpustream[thr_id] >> > (threads, startNounce, (uint64_t*)d_hash, d_temp4[thr_id], d_state[thr_id]);
+		CUDA_SAFE_CALL(cudaDeviceSynchronize());
 	}
 	CUDA_SAFE_CALL(cudaGetLastError());
 }
