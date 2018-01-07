@@ -2529,7 +2529,7 @@ __host__ void x11_shavite512_cpu_hash_64(int thr_id, uint32_t threads, uint32_t 
 
 	x11_shavite512_gpu_hash_64<<<grid, block, 0, gpustream[thr_id]>>>(threads, d_hash);
 
-	CUDA_SAFE_CALL(cudaGetLastError());
+	CUDA_SAFE_CALL(cudaDeviceSynchronize());
 }
 
 __host__ void x11_shavite512_cpu_hash_80(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_outputHash)

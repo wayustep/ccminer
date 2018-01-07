@@ -775,7 +775,6 @@ void x11_simd512_cpu_hash_64(int thr_id, uint32_t threads, uint32_t startNounce,
 {
 	dim3 grid8(((threads + simdthreads - 1) / simdthreads) * 8);
 
-
 	if (device_sm[device_map[thr_id]] >= 500) 
 	{
 		dim3 block(simdthreads);
