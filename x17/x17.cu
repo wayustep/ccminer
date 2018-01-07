@@ -198,6 +198,7 @@ extern int scanhash_x17(int thr_id, uint32_t *pdata,
 
 	if (!init[thr_id])
 	{
+		applog(LOG_WARNING, "GPU #%d: device_sm = %d", device_map[thr_id], device_sm[device_map[thr_id]]);
 		CUDA_SAFE_CALL(cudaSetDevice(device_map[thr_id]));
 		CUDA_SAFE_CALL(cudaDeviceReset());
 		CUDA_SAFE_CALL(cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync));
