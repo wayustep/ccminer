@@ -2796,6 +2796,16 @@ static int msver(void)
 	return version;
 }
 
+bool strictaliasingtest(short *h, long *k)
+{
+	*h = 5;
+	*k = 6;
+	if(*h == 5)
+		return true;
+	else
+		return false;
+}
+
 int main(int argc, char *argv[])
 {
 	struct thr_info *thr;
@@ -2835,15 +2845,22 @@ int main(int argc, char *argv[])
 #if !defined __clang__ && defined __GNUC__
 	if(CUDART_VERSION == 8000 && __GNUC__ > 5)
 	{
-		printf("WARNING! GCC %d IS NOT COMPATIBLE WITH CUDA 8!\n");
-		printf("PLEASE USE GCC 5\n");
+		printf("WARNING! GCC %d IS NOT COMPATIBLE WITH CUDA 8!\n", __GNUC__);
+		printf("PLEASE USE GCC 5\n\n");
 	}
 	if((CUDART_VERSION == 9000 || CUDART_VERSION == 9010) && __GNUC__ > 6)
 	{
-		printf("WARNING! GCC %d IS NOT COMPATIBLE WITH CUDA 9!\n");
+		printf("WARNING! GCC %d IS NOT COMPATIBLE WITH CUDA 9!\n", __GNUC__);
 		printf("PLEASE USE GCC 6\n\n");
 	}
 #endif
+
+	long      sat[1];
+	if(strictaliasingtest((short *)sat, sat))
+	{
+		printf("Warning! This build may produce wrong results or even crash!\n");
+		printf("Please use the -fno-strict-aliasing compiler option!\n\n");
+	}
 
 	rpc_user = strdup("");
 	rpc_pass = strdup("");
@@ -2874,6 +2891,20 @@ int main(int argc, char *argv[])
 		device_map[i] = i;
 	}
 
+	for(int i = 0; i < active_gpus; i++)
+	{
+		int dev_id = device_map[i];
+		cudaError_t err;
+		cudaDeviceProp props;
+		err = cudaGetDeviceProperties(&props, dev_id);
+		if(err != cudaSuccess)
+		{
+			applog(LOG_ERR, "%s", cudaGetErrorString(err));
+			exit(1);
+		}
+		device_name[dev_id] = props.name;
+	}
+
 	/* parse command line */
 	parse_cmdline(argc, argv);
 
@@ -2881,8 +2912,6 @@ int main(int argc, char *argv[])
 		opt_n_threads = active_gpus;
 
 	cuda_get_device_sm();
-
-	cuda_devicenames(); 
 
 	if(opt_protocol)
 	{
