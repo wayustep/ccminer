@@ -547,7 +547,7 @@ cubehash_core(sph_cubehash_context *sc, const void *data, size_t len)
 
 	buf = sc->buf;
 	ptr = sc->ptr;
-	if (len < (sizeof sc->buf) - ptr) {
+	if (len < (sizeof(sc->buf)) - ptr) {
 		memcpy(buf + ptr, data, len);
 		ptr += len;
 		sc->ptr = ptr;
@@ -558,14 +558,14 @@ cubehash_core(sph_cubehash_context *sc, const void *data, size_t len)
 	while (len > 0) {
 		size_t clen;
 
-		clen = (sizeof sc->buf) - ptr;
+		clen = (sizeof(sc->buf)) - ptr;
 		if (clen > len)
 			clen = len;
 		memcpy(buf + ptr, data, clen);
 		ptr += clen;
 		data = (const unsigned char *)data + clen;
 		len -= clen;
-		if (ptr == sizeof sc->buf) {
+		if (ptr == sizeof(sc->buf)) {
 			INPUT_BLOCK;
 			SIXTEEN_ROUNDS;
 			ptr = 0;
@@ -589,7 +589,7 @@ cubehash_close(sph_cubehash_context *sc, unsigned ub, unsigned n,
 	ptr = sc->ptr;
 	z = 0x80 >> n;
 	buf[ptr ++] = ((ub & -z) | z) & 0xFF;
-	memset(buf + ptr, 0, (sizeof sc->buf) - ptr);
+	memset(buf + ptr, 0, (sizeof(sc->buf)) - ptr);
 	READ_STATE(sc);
 	INPUT_BLOCK;
 	for (i = 0; i < 11; i ++) {

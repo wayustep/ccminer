@@ -1,34 +1,34 @@
 /* $Id: bmw.c 227 2010-06-16 17:28:38Z tp $ */
 /*
- * BMW implementation.
- *
- * ==========================(LICENSE BEGIN)============================
- *
- * Copyright (c) 2007-2010  Projet RNRT SAPHIR
- *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- * ===========================(LICENSE END)=============================
- *
- * @author   Thomas Pornin <thomas.pornin@cryptolog.com>
- */
+* BMW implementation.
+*
+* ==========================(LICENSE BEGIN)============================
+*
+* Copyright (c) 2007-2010  Projet RNRT SAPHIR
+*
+* Permission is hereby granted, free of charge, to any person obtaining
+* a copy of this software and associated documentation files (the
+* "Software"), to deal in the Software without restriction, including
+* without limitation the rights to use, copy, modify, merge, publish,
+* distribute, sublicense, and/or sell copies of the Software, and to
+* permit persons to whom the Software is furnished to do so, subject to
+* the following conditions:
+*
+* The above copyright notice and this permission notice shall be
+* included in all copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*
+* ===========================(LICENSE END)=============================
+*
+* @author   Thomas Pornin <thomas.pornin@cryptolog.com>
+*/
 
 #include <stddef.h>
 #include <string.h>
@@ -38,10 +38,6 @@
 
 #if SPH_SMALL_FOOTPRINT && !defined SPH_SMALL_FOOTPRINT_BMW
 #define SPH_SMALL_FOOTPRINT_BMW   1
-#endif
-
-#ifdef _MSC_VER
-#pragma warning (disable: 4146)
 #endif
 
 static const sph_u32 IV224[] = {
@@ -569,16 +565,16 @@ compress_small(const unsigned char *data, const sph_u32 h[16], sph_u32 dh[16])
 #else
 	sph_u32 mv[16];
 
-	mv[ 0] = sph_dec32le_aligned(data +  0);
-	mv[ 1] = sph_dec32le_aligned(data +  4);
-	mv[ 2] = sph_dec32le_aligned(data +  8);
-	mv[ 3] = sph_dec32le_aligned(data + 12);
-	mv[ 4] = sph_dec32le_aligned(data + 16);
-	mv[ 5] = sph_dec32le_aligned(data + 20);
-	mv[ 6] = sph_dec32le_aligned(data + 24);
-	mv[ 7] = sph_dec32le_aligned(data + 28);
-	mv[ 8] = sph_dec32le_aligned(data + 32);
-	mv[ 9] = sph_dec32le_aligned(data + 36);
+	mv[0] = sph_dec32le_aligned(data + 0);
+	mv[1] = sph_dec32le_aligned(data + 4);
+	mv[2] = sph_dec32le_aligned(data + 8);
+	mv[3] = sph_dec32le_aligned(data + 12);
+	mv[4] = sph_dec32le_aligned(data + 16);
+	mv[5] = sph_dec32le_aligned(data + 20);
+	mv[6] = sph_dec32le_aligned(data + 24);
+	mv[7] = sph_dec32le_aligned(data + 28);
+	mv[8] = sph_dec32le_aligned(data + 32);
+	mv[9] = sph_dec32le_aligned(data + 36);
 	mv[10] = sph_dec32le_aligned(data + 40);
 	mv[11] = sph_dec32le_aligned(data + 44);
 	mv[12] = sph_dec32le_aligned(data + 48);
@@ -635,25 +631,27 @@ bmw32(sph_bmw_small_context *sc, const void *data, size_t len)
 #else
 	tmp = sc->bit_count_low;
 	sc->bit_count_low = SPH_T32(tmp + ((sph_u32)len << 3));
-	if (sc->bit_count_low < tmp)
-		sc->bit_count_high ++;
+	if(sc->bit_count_low < tmp)
+		sc->bit_count_high++;
 	sc->bit_count_high += len >> 29;
 #endif
 	buf = sc->buf;
 	ptr = sc->ptr;
 	h1 = sc->H;
 	h2 = htmp;
-	while (len > 0) {
+	while(len > 0)
+	{
 		size_t clen;
 
-		clen = (sizeof sc->buf) - ptr;
-		if (clen > len)
+		clen = sizeof(sc->buf) - ptr;
+		if(clen > len)
 			clen = len;
 		memcpy(buf + ptr, data, clen);
 		data = (const unsigned char *)data + clen;
 		len -= clen;
 		ptr += clen;
-		if (ptr == sizeof sc->buf) {
+		if(ptr == sizeof(sc->buf))
+		{
 			sph_u32 *ht;
 
 			compress_small(buf, h1, h2);
@@ -664,13 +662,13 @@ bmw32(sph_bmw_small_context *sc, const void *data, size_t len)
 		}
 	}
 	sc->ptr = ptr;
-	if (h1 != sc->H)
-		memcpy(sc->H, h1, sizeof sc->H);
+	if(h1 != sc->H)
+		memcpy(sc->H, h1, sizeof(sc->H));
 }
 
 static void
 bmw32_close(sph_bmw_small_context *sc, unsigned ub, unsigned n,
-	void *dst, size_t out_size_w32)
+			void *dst, size_t out_size_w32)
 {
 	unsigned char *buf, *out;
 	size_t ptr, u, v;
@@ -680,30 +678,31 @@ bmw32_close(sph_bmw_small_context *sc, unsigned ub, unsigned n,
 	buf = sc->buf;
 	ptr = sc->ptr;
 	z = 0x80 >> n;
-	buf[ptr ++] = ((ub & -z) | z) & 0xFF;
+	buf[ptr++] = ((ub & -z) | z) & 0xFF;
 	h = sc->H;
-	if (ptr > (sizeof sc->buf) - 8) {
-		memset(buf + ptr, 0, (sizeof sc->buf) - ptr);
+	if(ptr > (sizeof(sc->buf)) - 8)
+	{
+		memset(buf + ptr, 0, (sizeof(sc->buf)) - ptr);
 		compress_small(buf, h, h1);
 		ptr = 0;
 		h = h1;
 	}
-	memset(buf + ptr, 0, (sizeof sc->buf) - 8 - ptr);
+	memset(buf + ptr, 0, (sizeof(sc->buf)) - 8 - ptr);
 #if SPH_64
-	sph_enc64le_aligned(buf + (sizeof sc->buf) - 8,
-		SPH_T64(sc->bit_count + n));
+	sph_enc64le_aligned(buf + (sizeof(sc->buf)) - 8,
+						SPH_T64(sc->bit_count + n));
 #else
-	sph_enc32le_aligned(buf + (sizeof sc->buf) - 8,
-		sc->bit_count_low + n);
-	sph_enc32le_aligned(buf + (sizeof sc->buf) - 4,
-		SPH_T32(sc->bit_count_high));
+	sph_enc32le_aligned(buf + (sizeof(sc->buf)) - 8,
+						sc->bit_count_low + n);
+	sph_enc32le_aligned(buf + (sizeof(sc->buf)) - 4,
+						SPH_T32(sc->bit_count_high));
 #endif
 	compress_small(buf, h, h2);
-	for (u = 0; u < 16; u ++)
+	for(u = 0; u < 16; u++)
 		sph_enc32le_aligned(buf + 4 * u, h2[u]);
 	compress_small(buf, final_s, h1);
 	out = dst;
-	for (u = 0, v = 16 - out_size_w32; u < out_size_w32; u ++, v ++)
+	for(u = 0, v = 16 - out_size_w32; u < out_size_w32; u++, v++)
 		sph_enc32le(out + 4 * u, h1[v]);
 }
 
@@ -717,19 +716,19 @@ compress_big(const unsigned char *data, const sph_u64 h[16], sph_u64 dh[16])
 #else
 	sph_u64 mv[16];
 
-	mv[ 0] = sph_dec64le_aligned(data +   0);
-	mv[ 1] = sph_dec64le_aligned(data +   8);
-	mv[ 2] = sph_dec64le_aligned(data +  16);
-	mv[ 3] = sph_dec64le_aligned(data +  24);
-	mv[ 4] = sph_dec64le_aligned(data +  32);
-	mv[ 5] = sph_dec64le_aligned(data +  40);
-	mv[ 6] = sph_dec64le_aligned(data +  48);
-	mv[ 7] = sph_dec64le_aligned(data +  56);
-	mv[ 8] = sph_dec64le_aligned(data +  64);
-	mv[ 9] = sph_dec64le_aligned(data +  72);
-	mv[10] = sph_dec64le_aligned(data +  80);
-	mv[11] = sph_dec64le_aligned(data +  88);
-	mv[12] = sph_dec64le_aligned(data +  96);
+	mv[0] = sph_dec64le_aligned(data + 0);
+	mv[1] = sph_dec64le_aligned(data + 8);
+	mv[2] = sph_dec64le_aligned(data + 16);
+	mv[3] = sph_dec64le_aligned(data + 24);
+	mv[4] = sph_dec64le_aligned(data + 32);
+	mv[5] = sph_dec64le_aligned(data + 40);
+	mv[6] = sph_dec64le_aligned(data + 48);
+	mv[7] = sph_dec64le_aligned(data + 56);
+	mv[8] = sph_dec64le_aligned(data + 64);
+	mv[9] = sph_dec64le_aligned(data + 72);
+	mv[10] = sph_dec64le_aligned(data + 80);
+	mv[11] = sph_dec64le_aligned(data + 88);
+	mv[12] = sph_dec64le_aligned(data + 96);
 	mv[13] = sph_dec64le_aligned(data + 104);
 	mv[14] = sph_dec64le_aligned(data + 112);
 	mv[15] = sph_dec64le_aligned(data + 120);
@@ -759,7 +758,7 @@ static const sph_u64 final_b[16] = {
 static void
 bmw64_init(sph_bmw_big_context *sc, const sph_u64 *iv)
 {
-	memcpy(sc->H, iv, sizeof sc->H);
+	memcpy(sc->H, iv, sizeof(sc->H));
 	sc->ptr = 0;
 	sc->bit_count = 0;
 }
@@ -777,17 +776,19 @@ bmw64(sph_bmw_big_context *sc, const void *data, size_t len)
 	ptr = sc->ptr;
 	h1 = sc->H;
 	h2 = htmp;
-	while (len > 0) {
+	while(len > 0)
+	{
 		size_t clen;
 
-		clen = (sizeof sc->buf) - ptr;
-		if (clen > len)
+		clen = (sizeof(sc->buf)) - ptr;
+		if(clen > len)
 			clen = len;
 		memcpy(buf + ptr, data, clen);
 		data = (const unsigned char *)data + clen;
 		len -= clen;
 		ptr += clen;
-		if (ptr == sizeof sc->buf) {
+		if(ptr == sizeof(sc->buf))
+		{
 			sph_u64 *ht;
 
 			compress_big(buf, h1, h2);
@@ -798,13 +799,13 @@ bmw64(sph_bmw_big_context *sc, const void *data, size_t len)
 		}
 	}
 	sc->ptr = ptr;
-	if (h1 != sc->H)
-		memcpy(sc->H, h1, sizeof sc->H);
+	if(h1 != sc->H)
+		memcpy(sc->H, h1, sizeof(sc->H));
 }
 
 static void
 bmw64_close(sph_bmw_big_context *sc, unsigned ub, unsigned n,
-	void *dst, size_t out_size_w64)
+			void *dst, size_t out_size_w64)
 {
 	unsigned char *buf, *out;
 	size_t ptr, u, v;
@@ -814,23 +815,24 @@ bmw64_close(sph_bmw_big_context *sc, unsigned ub, unsigned n,
 	buf = sc->buf;
 	ptr = sc->ptr;
 	z = 0x80 >> n;
-	buf[ptr ++] = ((ub & -z) | z) & 0xFF;
+	buf[ptr++] = ((ub & -z) | z) & 0xFF;
 	h = sc->H;
-	if (ptr > (sizeof sc->buf) - 8) {
-		memset(buf + ptr, 0, (sizeof sc->buf) - ptr);
+	if(ptr > (sizeof(sc->buf)) - 8)
+	{
+		memset(buf + ptr, 0, (sizeof(sc->buf)) - ptr);
 		compress_big(buf, h, h1);
 		ptr = 0;
 		h = h1;
 	}
-	memset(buf + ptr, 0, (sizeof sc->buf) - 8 - ptr);
-	sph_enc64le_aligned(buf + (sizeof sc->buf) - 8,
-		SPH_T64(sc->bit_count + n));
+	memset(buf + ptr, 0, (sizeof(sc->buf)) - 8 - ptr);
+	sph_enc64le_aligned(buf + (sizeof(sc->buf)) - 8,
+						SPH_T64(sc->bit_count + n));
 	compress_big(buf, h, h2);
-	for (u = 0; u < 16; u ++)
+	for(u = 0; u < 16; u++)
 		sph_enc64le_aligned(buf + 8 * u, h2[u]);
 	compress_big(buf, final_b, h1);
 	out = dst;
-	for (u = 0, v = 16 - out_size_w64; u < out_size_w64; u ++, v ++)
+	for(u = 0, v = 16 - out_size_w64; u < out_size_w64; u++, v++)
 		sph_enc64le(out + 8 * u, h1[v]);
 }
 

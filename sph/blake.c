@@ -808,7 +808,7 @@ blake32(sph_blake_small_context *sc, const void *data, size_t len)
 
 	buf = sc->buf;
 	ptr = sc->ptr;
-	if (len < (sizeof sc->buf) - ptr) {
+	if (len < (sizeof(sc->buf)) - ptr) {
 		memcpy(buf + ptr, data, len);
 		ptr += len;
 		sc->ptr = ptr;
@@ -819,14 +819,14 @@ blake32(sph_blake_small_context *sc, const void *data, size_t len)
 	while (len > 0) {
 		size_t clen;
 
-		clen = (sizeof sc->buf) - ptr;
+		clen = (sizeof(sc->buf)) - ptr;
 		if (clen > len)
 			clen = len;
 		memcpy(buf + ptr, data, clen);
 		ptr += clen;
 		data = (const unsigned char *)data + clen;
 		len -= clen;
-		if (ptr == sizeof sc->buf) {
+		if (ptr == sizeof(sc->buf)) {
 			if ((T0 = SPH_T32(T0 + 512)) < 512)
 				T1 = SPH_T32(T1 + 1);
 			COMPRESS32;
@@ -913,7 +913,7 @@ blake64(sph_blake_big_context *sc, const void *data, size_t len)
 
 	buf = sc->buf;
 	ptr = sc->ptr;
-	if (len < (sizeof sc->buf) - ptr) {
+	if (len < (sizeof(sc->buf)) - ptr) {
 		memcpy(buf + ptr, data, len);
 		ptr += len;
 		sc->ptr = ptr;
@@ -924,14 +924,14 @@ blake64(sph_blake_big_context *sc, const void *data, size_t len)
 	while (len > 0) {
 		size_t clen;
 
-		clen = (sizeof sc->buf) - ptr;
+		clen = (sizeof(sc->buf)) - ptr;
 		if (clen > len)
 			clen = len;
 		memcpy(buf + ptr, data, clen);
 		ptr += clen;
 		data = (const unsigned char *)data + clen;
 		len -= clen;
-		if (ptr == sizeof sc->buf) {
+		if (ptr == sizeof(sc->buf)) {
 			if ((T0 = SPH_T64(T0 + 1024)) < 1024)
 				T1 = SPH_T64(T1 + 1);
 			COMPRESS64;

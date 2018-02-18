@@ -1588,13 +1588,13 @@ update_small(void *cc, const void *data, size_t len)
 	while (len > 0) {
 		size_t clen;
 
-		clen = (sizeof sc->buf) - sc->ptr;
+		clen = (sizeof(sc->buf)) - sc->ptr;
 		if (clen > len)
 			clen = len;
 		memcpy(sc->buf + sc->ptr, data, clen);
 		data = (const unsigned char *)data + clen;
 		len -= clen;
-		if ((sc->ptr += clen) == sizeof sc->buf) {
+		if ((sc->ptr += clen) == sizeof(sc->buf)) {
 			compress_small(sc, 0);
 			sc->ptr = 0;
 			sc->count_low = T32(sc->count_low + 1);
@@ -1613,13 +1613,13 @@ update_big(void *cc, const void *data, size_t len)
 	while (len > 0) {
 		size_t clen;
 
-		clen = (sizeof sc->buf) - sc->ptr;
+		clen = (sizeof(sc->buf)) - sc->ptr;
 		if (clen > len)
 			clen = len;
 		memcpy(sc->buf + sc->ptr, data, clen);
 		data = (const unsigned char *)data + clen;
 		len -= clen;
-		if ((sc->ptr += clen) == sizeof sc->buf) {
+		if ((sc->ptr += clen) == sizeof(sc->buf)) {
 			compress_big(sc, 0);
 			sc->ptr = 0;
 			sc->count_low = T32(sc->count_low + 1);
@@ -1661,11 +1661,11 @@ finalize_small(void *cc, unsigned ub, unsigned n, void *dst, size_t dst_len)
 	sc = cc;
 	if (sc->ptr > 0 || n > 0) {
 		memset(sc->buf + sc->ptr, 0,
-			(sizeof sc->buf) - sc->ptr);
+			(sizeof(sc->buf)) - sc->ptr);
 		sc->buf[sc->ptr] = ub & (0xFF << (8 - n));
 		compress_small(sc, 0);
 	}
-	memset(sc->buf, 0, sizeof sc->buf);
+	memset(sc->buf, 0, sizeof(sc->buf));
 	encode_count_small(sc->buf, sc->count_low, sc->count_high, sc->ptr, n);
 	compress_small(sc, 1);
 	d = dst;
@@ -1683,11 +1683,11 @@ finalize_big(void *cc, unsigned ub, unsigned n, void *dst, size_t dst_len)
 	sc = cc;
 	if (sc->ptr > 0 || n > 0) {
 		memset(sc->buf + sc->ptr, 0,
-			(sizeof sc->buf) - sc->ptr);
+			(sizeof(sc->buf)) - sc->ptr);
 		sc->buf[sc->ptr] = ub & (0xFF << (8 - n));
 		compress_big(sc, 0);
 	}
-	memset(sc->buf, 0, sizeof sc->buf);
+	memset(sc->buf, 0, sizeof(sc->buf));
 	encode_count_big(sc->buf, sc->count_low, sc->count_high, sc->ptr, n);
 	compress_big(sc, 1);
 	d = dst;

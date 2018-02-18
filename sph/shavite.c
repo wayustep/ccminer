@@ -1495,14 +1495,14 @@ shavite_small_core(sph_shavite_small_context *sc, const void *data, size_t len)
 	while (len > 0) {
 		size_t clen;
 
-		clen = (sizeof sc->buf) - ptr;
+		clen = (sizeof(sc->buf)) - ptr;
 		if (clen > len)
 			clen = len;
 		memcpy(buf + ptr, data, clen);
 		data = (const unsigned char *)data + clen;
 		ptr += clen;
 		len -= clen;
-		if (ptr == sizeof sc->buf) {
+		if (ptr == sizeof(sc->buf)) {
 			if ((sc->count0 = SPH_T32(sc->count0 + 512)) == 0)
 				sc->count1 = SPH_T32(sc->count1 + 1);
 			c256(sc, buf);
@@ -1572,14 +1572,14 @@ shavite_big_core(sph_shavite_big_context *sc, const void *data, size_t len)
 	while (len > 0) {
 		size_t clen;
 
-		clen = (sizeof sc->buf) - ptr;
+		clen = (sizeof(sc->buf)) - ptr;
 		if (clen > len)
 			clen = len;
 		memcpy(buf + ptr, data, clen);
 		data = (const unsigned char *)data + clen;
 		ptr += clen;
 		len -= clen;
-		if (ptr == sizeof sc->buf) {
+		if (ptr == sizeof(sc->buf)) {
 			if ((sc->count0 = SPH_T32(sc->count0 + 1024)) == 0) {
 				sc->count1 = SPH_T32(sc->count1 + 1);
 				if (sc->count1 == 0) {

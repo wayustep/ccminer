@@ -2776,7 +2776,7 @@ groestl_small_core(sph_groestl_small_context *sc, const void *data, size_t len)
 
 	buf = sc->buf;
 	ptr = sc->ptr;
-	if (len < (sizeof sc->buf) - ptr) {
+	if (len < (sizeof(sc->buf)) - ptr) {
 		memcpy(buf + ptr, data, len);
 		ptr += len;
 		sc->ptr = ptr;
@@ -2787,14 +2787,14 @@ groestl_small_core(sph_groestl_small_context *sc, const void *data, size_t len)
 	while (len > 0) {
 		size_t clen;
 
-		clen = (sizeof sc->buf) - ptr;
+		clen = (sizeof(sc->buf)) - ptr;
 		if (clen > len)
 			clen = len;
 		memcpy(buf + ptr, data, clen);
 		ptr += clen;
 		data = (const unsigned char *)data + clen;
 		len -= clen;
-		if (ptr == sizeof sc->buf) {
+		if (ptr == sizeof(sc->buf)) {
 			COMPRESS_SMALL;
 #if SPH_64
 			sc->count ++;
@@ -2912,7 +2912,7 @@ groestl_big_core(sph_groestl_big_context *sc, const void *data, size_t len)
 
 	buf = sc->buf;
 	ptr = sc->ptr;
-	if (len < (sizeof sc->buf) - ptr) {
+	if (len < (sizeof(sc->buf)) - ptr) {
 		memcpy(buf + ptr, data, len);
 		ptr += len;
 		sc->ptr = ptr;
@@ -2923,14 +2923,14 @@ groestl_big_core(sph_groestl_big_context *sc, const void *data, size_t len)
 	while (len > 0) {
 		size_t clen;
 
-		clen = (sizeof sc->buf) - ptr;
+		clen = (sizeof(sc->buf)) - ptr;
 		if (clen > len)
 			clen = len;
 		memcpy(buf + ptr, data, clen);
 		ptr += clen;
 		data = (const unsigned char *)data + clen;
 		len -= clen;
-		if (ptr == sizeof sc->buf) {
+		if (ptr == sizeof(sc->buf)) {
 			COMPRESS_BIG;
 #if SPH_64
 			sc->count ++;

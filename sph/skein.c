@@ -786,7 +786,7 @@ skein_small_core(sph_skein_small_context *sc, const void *data, size_t len)
 
 	buf = sc->buf;
 	ptr = sc->ptr;
-	clen = (sizeof sc->buf) - ptr;
+	clen = (sizeof(sc->buf)) - ptr;
 	if (len <= clen) {
 		memcpy(buf + ptr, data, len);
 		sc->ptr = ptr + len;
@@ -805,12 +805,12 @@ skein_small_core(sph_skein_small_context *sc, const void *data, size_t len)
 	for (;;) {
 		bcount ++;
 		UBI_SMALL(96 + first, 0);
-		if (len <= sizeof sc->buf)
+		if (len <= sizeof(sc->buf))
 			break;
 		first = 0;
-		memcpy(buf, data, sizeof sc->buf);
-		data = (const unsigned char *)data + sizeof sc->buf;
-		len -= sizeof sc->buf;
+		memcpy(buf, data, sizeof(sc->buf));
+		data = (const unsigned char *)data + sizeof(sc->buf);
+		len -= sizeof(sc->buf);
 	}
 	WRITE_STATE_SMALL(sc);
 	sc->ptr = len;
@@ -827,20 +827,20 @@ skein_small_core(sph_skein_small_context *sc, const void *data, size_t len)
 	for (;;) {
 		bcount ++;
 		UBI_SMALL(96 + first, 0);
-		if (len <= sizeof sc->buf)
+		if (len <= sizeof(sc->buf))
 			break;
 		buf = (unsigned char *)data;
 		bcount ++;
 		UBI_SMALL(96, 0);
-		if (len <= 2 * sizeof sc->buf) {
-			data = buf + sizeof sc->buf;
-			len -= sizeof sc->buf;
+		if (len <= 2 * sizeof(sc->buf)) {
+			data = buf + sizeof(sc->buf);
+			len -= sizeof(sc->buf);
 			break;
 		}
-		buf += sizeof sc->buf;
-		data = buf + sizeof sc->buf;
+		buf += sizeof(sc->buf);
+		data = buf + sizeof(sc->buf);
 		first = 0;
-		len -= 2 * sizeof sc->buf;
+		len -= 2 * sizeof(sc->buf);
 	}
 	WRITE_STATE_SMALL(sc);
 	sc->ptr = len;
@@ -870,7 +870,7 @@ skein_big_core(sph_skein_big_context *sc, const void *data, size_t len)
 
 	buf = sc->buf;
 	ptr = sc->ptr;
-	if (len <= (sizeof sc->buf) - ptr) {
+	if (len <= (sizeof(sc->buf)) - ptr) {
 		memcpy(buf + ptr, data, len);
 		ptr += len;
 		sc->ptr = ptr;
@@ -882,13 +882,13 @@ skein_big_core(sph_skein_big_context *sc, const void *data, size_t len)
 	do {
 		size_t clen;
 
-		if (ptr == sizeof sc->buf) {
+		if (ptr == sizeof(sc->buf)) {
 			bcount ++;
 			UBI_BIG(96 + first, 0);
 			first = 0;
 			ptr = 0;
 		}
-		clen = (sizeof sc->buf) - ptr;
+		clen = (sizeof(sc->buf)) - ptr;
 		if (clen > len)
 			clen = len;
 		memcpy(buf + ptr, data, clen);
@@ -924,12 +924,12 @@ skein_small_close(sph_skein_small_context *sc, unsigned ub, unsigned n,
 	buf = sc->buf;
 	ptr = sc->ptr;
 	READ_STATE_SMALL(sc);
-	memset(buf + ptr, 0, (sizeof sc->buf) - ptr);
+	memset(buf + ptr, 0, (sizeof(sc->buf)) - ptr);
 	et = 352 + ((bcount == 0) << 7) + (n != 0);
 	for (i = 0; i < 2; i ++) {
 		UBI_SMALL(et, ptr);
 		if (i == 0) {
-			memset(buf, 0, sizeof sc->buf);
+			memset(buf, 0, sizeof(sc->buf));
 			bcount = 0;
 			et = 510;
 			ptr = 8;
@@ -985,12 +985,12 @@ skein_big_close(sph_skein_big_context *sc, unsigned ub, unsigned n,
 	 * the encoding of "0", over 8 bytes, then padded with zeros).
 	 */
 	READ_STATE_BIG(sc);
-	memset(buf + ptr, 0, (sizeof sc->buf) - ptr);
+	memset(buf + ptr, 0, (sizeof(sc->buf)) - ptr);
 	et = 352 + ((bcount == 0) << 7) + (n != 0);
 	for (i = 0; i < 2; i ++) {
 		UBI_BIG(et, ptr);
 		if (i == 0) {
-			memset(buf, 0, sizeof sc->buf);
+			memset(buf, 0, sizeof(sc->buf));
 			bcount = 0;
 			et = 510;
 			ptr = 8;

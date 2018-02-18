@@ -736,7 +736,7 @@ echo_small_core(sph_echo_small_context *sc,
 
 	buf = sc->buf;
 	ptr = sc->ptr;
-	if (len < (sizeof sc->buf) - ptr) {
+	if (len < (sizeof(sc->buf)) - ptr) {
 		memcpy(buf + ptr, data, len);
 		ptr += len;
 		sc->ptr = ptr;
@@ -746,14 +746,14 @@ echo_small_core(sph_echo_small_context *sc,
 	while (len > 0) {
 		size_t clen;
 
-		clen = (sizeof sc->buf) - ptr;
+		clen = (sizeof(sc->buf)) - ptr;
 		if (clen > len)
 			clen = len;
 		memcpy(buf + ptr, data, clen);
 		ptr += clen;
 		data += clen;
 		len -= clen;
-		if (ptr == sizeof sc->buf) {
+		if (ptr == sizeof(sc->buf)) {
 			INCR_COUNTER(sc, 1536);
 			echo_small_compress(sc);
 			ptr = 0;
@@ -771,7 +771,7 @@ echo_big_core(sph_echo_big_context *sc,
 
 	buf = sc->buf;
 	ptr = sc->ptr;
-	if (len < (sizeof sc->buf) - ptr) {
+	if (len < (sizeof(sc->buf)) - ptr) {
 		memcpy(buf + ptr, data, len);
 		ptr += len;
 		sc->ptr = ptr;
@@ -781,14 +781,14 @@ echo_big_core(sph_echo_big_context *sc,
 	while (len > 0) {
 		size_t clen;
 
-		clen = (sizeof sc->buf) - ptr;
+		clen = (sizeof(sc->buf)) - ptr;
 		if (clen > len)
 			clen = len;
 		memcpy(buf + ptr, data, clen);
 		ptr += clen;
 		data += clen;
 		len -= clen;
-		if (ptr == sizeof sc->buf) {
+		if (ptr == sizeof(sc->buf)) {
 			INCR_COUNTER(sc, 1024);
 			echo_big_compress(sc);
 			ptr = 0;
@@ -836,14 +836,14 @@ echo_small_close(sph_echo_small_context *sc, unsigned ub, unsigned n,
 	}
 	z = 0x80 >> n;
 	buf[ptr ++] = ((ub & -z) | z) & 0xFF;
-	memset(buf + ptr, 0, (sizeof sc->buf) - ptr);
-	if (ptr > ((sizeof sc->buf) - 18)) {
+	memset(buf + ptr, 0, (sizeof(sc->buf)) - ptr);
+	if (ptr > ((sizeof(sc->buf)) - 18)) {
 		echo_small_compress(sc);
 		sc->C0 = sc->C1 = sc->C2 = sc->C3 = 0;
-		memset(buf, 0, sizeof sc->buf);
+		memset(buf, 0, sizeof(sc->buf));
 	}
-	sph_enc16le(buf + (sizeof sc->buf) - 18, out_size_w32 << 5);
-	memcpy(buf + (sizeof sc->buf) - 16, u.tmp, 16);
+	sph_enc16le(buf + (sizeof(sc->buf)) - 18, out_size_w32 << 5);
+	memcpy(buf + (sizeof(sc->buf)) - 16, u.tmp, 16);
 	echo_small_compress(sc);
 #if SPH_ECHO_64
 	for (VV = &sc->u.Vb[0][0], k = 0; k < ((out_size_w32 + 1) >> 1); k ++)
@@ -895,14 +895,14 @@ echo_big_close(sph_echo_big_context *sc, unsigned ub, unsigned n,
 	}
 	z = 0x80 >> n;
 	buf[ptr ++] = ((ub & -z) | z) & 0xFF;
-	memset(buf + ptr, 0, (sizeof sc->buf) - ptr);
-	if (ptr > ((sizeof sc->buf) - 18)) {
+	memset(buf + ptr, 0, (sizeof(sc->buf)) - ptr);
+	if (ptr > ((sizeof(sc->buf)) - 18)) {
 		echo_big_compress(sc);
 		sc->C0 = sc->C1 = sc->C2 = sc->C3 = 0;
-		memset(buf, 0, sizeof sc->buf);
+		memset(buf, 0, sizeof(sc->buf));
 	}
-	sph_enc16le(buf + (sizeof sc->buf) - 18, out_size_w32 << 5);
-	memcpy(buf + (sizeof sc->buf) - 16, u.tmp, 16);
+	sph_enc16le(buf + (sizeof(sc->buf)) - 18, out_size_w32 << 5);
+	memcpy(buf + (sizeof(sc->buf)) - 16, u.tmp, 16);
 	echo_big_compress(sc);
 #if SPH_ECHO_64
 	for (VV = &sc->u.Vb[0][0], k = 0; k < ((out_size_w32 + 1) >> 1); k ++)
