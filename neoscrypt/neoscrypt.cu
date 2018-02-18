@@ -37,7 +37,7 @@ int scanhash_neoscrypt(bool stratum, int thr_id, uint32_t *pdata,
 	{
 		CUDA_SAFE_CALL(cudaSetDevice(device_map[thr_id]));
 		CUDA_SAFE_CALL(cudaDeviceReset());
-		CUDA_SAFE_CALL(cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync));
+		CUDA_SAFE_CALL(cudaSetDeviceFlags(cudaschedule));
 		CUDA_SAFE_CALL(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
 
 		cudaDeviceProp props;
@@ -49,8 +49,6 @@ int scanhash_neoscrypt(bool stratum, int thr_id, uint32_t *pdata,
 			mining_has_stopped[thr_id] = true;
 			proper_exit(2);
 		}
-		if(cc == 30)
-			use_tpruvot = true;
 
 		unsigned int intensity = (256 * 64 * 1); // -i 14
 		if(strstr(props.name, " Xp"))
@@ -67,6 +65,15 @@ int scanhash_neoscrypt(bool stratum, int thr_id, uint32_t *pdata,
 		{
 			intensity = 256 * 64 * 5;
 			use_tpruvot = true;
+		}
+		else if(strstr(props.name, "P104"))
+		{
+			intensity = 256 * 64 * 5;
+			use_tpruvot = true;
+		}
+		else if(strstr(props.name, "P106"))
+		{
+			intensity = 256 * 64 * 5;
 		}
 		else if(strstr(props.name, "1070"))
 		{
@@ -100,11 +107,16 @@ int scanhash_neoscrypt(bool stratum, int thr_id, uint32_t *pdata,
 		{
 			intensity = (256 * 64 * 2);
 		}
+		if(cc == 70 || cc == 60) // Tesla P100/V100 or Titan V
+		{
+			intensity = 256 * 64 * 5;
+			use_tpruvot = true;
+		}
 
 		throughputmax = device_intensity(device_map[thr_id], __func__, intensity) / 2;
 		//		cudaDeviceSetCacheConfig(cudaFuncCachePreferL1);	
 		if(throughputmax == intensity/2)
-			applog(LOG_INFO, "GPU #%d: using default intensity %.3f", device_map[thr_id], throughput2intensity(throughputmax));
+			applog(LOG_INFO, "GPU #%d: using default intensity %.3f", device_map[thr_id], throughput2intensity(throughputmax*2));
 		CUDA_SAFE_CALL(cudaMallocHost(&foundNonce, 2 * 4));
 
 #if defined WIN32 && !defined _WIN64

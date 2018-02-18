@@ -153,7 +153,7 @@ static inline uint64_t swab64(uint64_t x)
 #ifdef _MSC_VER
 	return _byteswap_uint64(x);
 #else
-	return (((uint64_t)bswap_32((uint32_t)((x)& 0xffffffffu)) << 32) | (uint64_t)bswap_32((uint32_t)((x) >> 32)));
+	return (((uint64_t)swab32((uint32_t)((x)& 0xffffffffu)) << 32) | (uint64_t)swab32((uint32_t)((x) >> 32)));
 #endif
 #endif
 }
@@ -515,6 +515,7 @@ extern bool opt_trust_pool;
 extern volatile bool abort_flag;
 extern uint64_t global_hashrate;
 extern double   global_diff;
+extern unsigned int cudaschedule;
 
 #define MAX_GPUS 16
 extern char* device_name[MAX_GPUS];
