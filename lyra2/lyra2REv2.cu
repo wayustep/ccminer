@@ -30,6 +30,19 @@ extern void bmw256_cpu_hash_32(int thr_id, uint32_t threads, uint32_t startNounc
 
 extern void cubehash256_cpu_hash_32(int thr_id, uint32_t threads, uint32_t startNounce, uint64_t *d_hash);
 
+void printtemphash(void *d_hash, uint32_t threads, char *comment)
+{
+	uint64_t temphash[4];
+	uint64_t *hash = (uint64_t *)d_hash;
+
+	cudaDeviceSynchronize();
+	cudaMemcpy(temphash, hash, 8, cudaMemcpyDeviceToHost);
+	cudaMemcpy(temphash+1, hash+threads, 8, cudaMemcpyDeviceToHost);
+	cudaMemcpy(temphash+2, hash+2*threads, 8, cudaMemcpyDeviceToHost);
+	cudaMemcpy(temphash+3, hash+3*threads, 8, cudaMemcpyDeviceToHost);
+	applog(LOG_WARNING, "%s %s", bin2hex((unsigned char*)temphash, 32), comment);
+}
+
 extern "C" void lyra2v2_hash(void *state, const void *input)
 {
 	sph_blake256_context      ctx_blake;
@@ -180,27 +193,21 @@ int scanhash_lyra2v2(int thr_id, uint32_t *pdata,
 		uint32_t foundNonce[2] = { 0, 0 };
 		uint32_t temphash[8];
 		blakeKeccak256_cpu_hash_80(thr_id, throughput, pdata[19], d_hash);
-		cudaDeviceSynchronize();
-		cudaMemcpy(temphash, d_hash, 32, cudaMemcpyDeviceToHost);
-		applog(LOG_WARNING, "%s blakekeccak", bin2hex((unsigned char*)temphash, 8));
+		printtemphash(d_hash, throughput, "cuda blakekeccak");
 
 //		keccak256_cpu_hash_32(thr_id, throughput, pdata[19], d_hash);
 		cubehash256_cpu_hash_32(thr_id, throughput, pdata[19], d_hash);
-		cudaDeviceSynchronize();
-		cudaMemcpy(temphash, d_hash, 32, cudaMemcpyDeviceToHost);
-		applog(LOG_WARNING, "%s cubehash", bin2hex((unsigned char*)temphash, 8));
+		printtemphash(d_hash, throughput, "cuda cubehash");
+
 		lyra2v2_cpu_hash_32(thr_id, throughput, pdata[19], d_hash);
-		cudaDeviceSynchronize();
-		cudaMemcpy(temphash, d_hash, 32, cudaMemcpyDeviceToHost);
-		applog(LOG_WARNING, "%s lyra", bin2hex((unsigned char*)temphash, 8));
+		printtemphash(d_hash, throughput, "cuda lyra");
+
 		skein256_cpu_hash_32(thr_id, throughput, pdata[19], d_hash);
-		cudaDeviceSynchronize();
-		cudaMemcpy(temphash, d_hash, 32, cudaMemcpyDeviceToHost);
-		applog(LOG_WARNING, "%s skein", bin2hex((unsigned char*)temphash, 8));
+		printtemphash(d_hash, throughput, "cuda skein");
+
 		cubehash256_cpu_hash_32(thr_id, throughput,pdata[19], d_hash);
-		cudaDeviceSynchronize();
-		cudaMemcpy(temphash, d_hash, 32, cudaMemcpyDeviceToHost);
-		applog(LOG_WARNING, "%s cubehash", bin2hex((unsigned char*)temphash, 8));
+		printtemphash(d_hash, throughput, "cuda cubehash");
+
 		bmw256_cpu_hash_32(thr_id, throughput, pdata[19], d_hash, foundNonce, ptarget[7]);
 		if(stop_mining)
 		{
