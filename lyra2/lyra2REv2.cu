@@ -47,30 +47,26 @@ extern "C" void lyra2v2_hash(void *state, const void *input)
 	sph_keccak256_init(&ctx_keccak);
 	sph_keccak256(&ctx_keccak, hashA, 32);
 	sph_keccak256_close(&ctx_keccak, hashB);
-	applog(LOG_WARNING, "%s blakekeccak", bin2hex((unsigned char*)hashB, 32));
 
 	sph_cubehash256_init(&ctx_cube);
 	sph_cubehash256(&ctx_cube, hashB, 32);
 	sph_cubehash256_close(&ctx_cube, hashA);
-	applog(LOG_WARNING, "%s cubehash", bin2hex((unsigned char*)hashA, 32));
+
 
 	LYRA2(hashB, 32, hashA, 32, hashA, 32, 1, 4, 4);
-	applog(LOG_WARNING, "%s lyra", bin2hex((unsigned char*)hashB, 32));
 
 	sph_skein256_init(&ctx_skein);
 	sph_skein256(&ctx_skein, hashB, 32);
 	sph_skein256_close(&ctx_skein, hashA);
-	applog(LOG_WARNING, "%s skein", bin2hex((unsigned char*)hashA, 32));
 
 	sph_cubehash256_init(&ctx_cube);
 	sph_cubehash256(&ctx_cube, hashA, 32);
 	sph_cubehash256_close(&ctx_cube, hashB);
-	applog(LOG_WARNING, "%s cubehash", bin2hex((unsigned char*)hashB, 32));
+
 
 	sph_bmw256_init(&ctx_bmw);
 	sph_bmw256(&ctx_bmw, hashB, 32);
 	sph_bmw256_close(&ctx_bmw, hashA);
-	applog(LOG_WARNING, "%s bmw", bin2hex((unsigned char*)hashA, 32));
 
 	memcpy(state, hashA, 32);
 }
@@ -178,43 +174,27 @@ int scanhash_lyra2v2(int thr_id, uint32_t *pdata,
 
 	do {
 		uint32_t foundNonce[2] = { 0, 0 };
-		uint32_t temphash[8];
-		blakeKeccak256_cpu_hash_80(thr_id, throughput, pdata[19], d_hash);
-		cudaDeviceSynchronize();
-		cudaMemcpy(temphash, d_hash, 32, cudaMemcpyDeviceToHost);
-		applog(LOG_WARNING, "%s blakekeccak", bin2hex((unsigned char*)temphash, 8));
 
+		blakeKeccak256_cpu_hash_80(thr_id, throughput, pdata[19], d_hash);
 //		keccak256_cpu_hash_32(thr_id, throughput, pdata[19], d_hash);
 		cubehash256_cpu_hash_32(thr_id, throughput, pdata[19], d_hash);
-		cudaDeviceSynchronize();
-		cudaMemcpy(temphash, d_hash, 32, cudaMemcpyDeviceToHost);
-		applog(LOG_WARNING, "%s cubehash", bin2hex((unsigned char*)temphash, 8));
 		lyra2v2_cpu_hash_32(thr_id, throughput, pdata[19], d_hash);
-		cudaDeviceSynchronize();
-		cudaMemcpy(temphash, d_hash, 32, cudaMemcpyDeviceToHost);
-		applog(LOG_WARNING, "%s lyra", bin2hex((unsigned char*)temphash, 8));
 		skein256_cpu_hash_32(thr_id, throughput, pdata[19], d_hash);
-		cudaDeviceSynchronize();
-		cudaMemcpy(temphash, d_hash, 32, cudaMemcpyDeviceToHost);
-		applog(LOG_WARNING, "%s skein", bin2hex((unsigned char*)temphash, 8));
 		cubehash256_cpu_hash_32(thr_id, throughput,pdata[19], d_hash);
-		cudaDeviceSynchronize();
-		cudaMemcpy(temphash, d_hash, 32, cudaMemcpyDeviceToHost);
-		applog(LOG_WARNING, "%s cubehash", bin2hex((unsigned char*)temphash, 8));
 		bmw256_cpu_hash_32(thr_id, throughput, pdata[19], d_hash, foundNonce, ptarget[7]);
 		if(stop_mining)
 		{
 			mining_has_stopped[thr_id] = true; cudaStreamDestroy(gpustream[thr_id]); pthread_exit(nullptr);
 		}
-//		if(foundNonce[0] != 0)
+		if(foundNonce[0] != 0)
 		{
 			const uint32_t Htarg = ptarget[7];
 			uint32_t vhash64[8]={0};
 			if(opt_verify)
 			{
+				be32enc(&endiandata[19], foundNonce[0]);
 				lyra2v2_hash(vhash64, endiandata);
 			}
-			proper_exit(0);
 			if (vhash64[7] <= Htarg && fulltest(vhash64, ptarget))
 			{
 				int res = 1;
