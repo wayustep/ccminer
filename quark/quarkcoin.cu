@@ -6,6 +6,7 @@ extern "C"
 #include "sph/sph_skein.h"
 #include "sph/sph_jh.h"
 #include "sph/sph_keccak.h"
+#include "SHA3api_ref.h"
 }
 
 #include "miner.h"
@@ -50,7 +51,7 @@ extern void cuda_check_quarkcoin(int thr_id, uint32_t threads, uint32_t startNou
 void quarkhash(void *state, const void *input)
 {
     sph_blake512_context ctx_blake;
-    sph_bmw512_context ctx_bmw;
+//    sph_bmw512_context ctx_bmw;
     sph_groestl512_context ctx_groestl;
     sph_jh512_context ctx_jh;
     sph_keccak512_context ctx_keccak;
@@ -61,10 +62,12 @@ void quarkhash(void *state, const void *input)
     sph_blake512_init(&ctx_blake);
     sph_blake512 (&ctx_blake, input, 80);
     sph_blake512_close(&ctx_blake, (void*) hash);
-    
+ /*   
     sph_bmw512_init(&ctx_bmw);
     sph_bmw512 (&ctx_bmw, (const void*) hash, 64);
     sph_bmw512_close(&ctx_bmw, (void*) hash);
+*/
+	BMWHash(512, (const BitSequence*)hash, 512, (BitSequence*)hash);
 
     if (hash[0] & 0x8)
     {
@@ -95,9 +98,12 @@ void quarkhash(void *state, const void *input)
     }
     else
     {
+		/*
         sph_bmw512_init(&ctx_bmw);
         sph_bmw512 (&ctx_bmw, (const void*) hash, 64);
         sph_bmw512_close(&ctx_bmw, (void*) hash);
+		*/
+		BMWHash(512, (const BitSequence*)hash, 512, (BitSequence*)hash);
     }
 
     sph_keccak512_init(&ctx_keccak);

@@ -6,7 +6,7 @@
 extern "C"
 {
 #include "sph/sph_blake.h"
-#include "sph/sph_bmw.h"
+//#include "sph/sph_bmw.h"
 #include "sph/sph_groestl.h"
 #include "sph/sph_skein.h"
 #include "sph/sph_jh.h"
@@ -26,6 +26,7 @@ extern "C"
 
 #include "sph/sph_sha2.h"
 #include "sph/sph_haval.h"
+#include "SHA3api_ref.h"
 }
 
 #include "miner.h"
@@ -88,7 +89,7 @@ void x17hash(void *output, const void *input)
 	// blake1-bmw2-grs3-skein4-jh5-keccak6-luffa7-cubehash8-shavite9-simd10-echo11-hamsi12-fugue13-shabal14-whirlpool15-sha512-haval17
 
 	sph_blake512_context ctx_blake;
-	sph_bmw512_context ctx_bmw;
+//	sph_bmw512_context ctx_bmw;
 	sph_groestl512_context ctx_groestl;
 	sph_jh512_context ctx_jh;
 	sph_keccak512_context ctx_keccak;
@@ -106,15 +107,17 @@ void x17hash(void *output, const void *input)
 	sph_haval256_5_context ctx_haval;
 
 	unsigned char hash[128]; // uint32_t hashA[16], hashB[16];
-	#define hashB hash+64
+	#define hashB (hash + 64)
 
 	sph_blake512_init(&ctx_blake);
 	sph_blake512(&ctx_blake, input, 80);
 	sph_blake512_close(&ctx_blake, hash);
-
+/*
 	sph_bmw512_init(&ctx_bmw);
 	sph_bmw512(&ctx_bmw, (const void*) hash, 64);
 	sph_bmw512_close(&ctx_bmw, hash);
+*/
+	BMWHash(512, (const BitSequence*)hash, 512, (BitSequence*)hash);
 
 	sph_groestl512_init(&ctx_groestl);
 	sph_groestl512(&ctx_groestl, (const void*) hash, 64);
