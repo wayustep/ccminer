@@ -1017,4 +1017,5 @@ __host__ void quark_blake512_cpu_hash_80(int thr_id, uint32_t threads, uint32_t 
 
 	quark_blake512_gpu_hash_80 << <grid, block, 0, gpustream[thr_id] >> >(threads, startNounce, (uint2 *)d_outputHash);
 	CUDA_SAFE_CALL(cudaGetLastError());
+	printtemphash((void *)d_outputHash, threads, "blake");
 }

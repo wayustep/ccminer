@@ -1163,5 +1163,5 @@ uint32_t andor32(uint32_t a, uint32_t b, uint32_t c) {
 #define __ldg(x) (*(x))
 #endif
 #endif
-
+extern void printtemphash(void *d_hash, uint32_t threads, char *comment);
 #endif // #ifndef CUDA_HELPER_H
