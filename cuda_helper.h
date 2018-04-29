@@ -76,6 +76,23 @@ extern cudaError_t MyStreamSynchronize(cudaStream_t stream, int situation, int t
 // #define SPH_T64(x) ((x) & SPH_C64(0xFFFFFFFFFFFFFFFF))
 #endif
 
+#if defined CUDART_VERSION
+static __device__ __forceinline__ int SHFL(int var, int src, int width = 32)
+{
+#if CUDART_VERSION >= 9010
+	return __shfl_sync(0xffffffff, var, src, width);
+#else
+	return __shfl(var, src, width);
+#endif
+}
+#if CUDART_VERSION >= 9010
+#define SHFL_UP(a, b, c) __shfl_up_sync(0xffffffff, (a), (b), (c))
+#else
+#define SHFL_UP(a, b, c) __shfl_up((a), (b), (c))
+#endif
+#endif
+
+
 #if defined _MSC_VER && !defined __CUDA_ARCH__
 #define ROTL32c(x, n) _rotl(x, n)
 #define ROTR32c(x, n) _rotr(x, n)
