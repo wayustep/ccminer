@@ -194,6 +194,7 @@ struct thr_api *thr_api = nullptr;
 int longpoll_thr_id = -1;
 int stratum_thr_id = -1;
 int api_thr_id = -1;
+int monitor_thr_id = -1;
 bool stratum_need_reset = false;
 volatile bool abort_flag = false;
 struct work_restart *work_restart = NULL;
@@ -1182,7 +1183,7 @@ static bool get_work(struct thr_info *thr, struct work *work)
 	if(wc == NULL)
 	{
 		applog(LOG_ERR, "Out of memory!");
-		proper_exit(2);
+		proper_exit(EXIT_FAILURE);
 	}
 
 	wc->cmd = WC_GET_WORK;
@@ -1215,14 +1216,14 @@ static bool submit_work(struct thr_info *thr, const struct work *work_in)
 	if(wc == NULL)
 	{
 		applog(LOG_ERR, "Out of memory!");
-		proper_exit(2);
+		proper_exit(EXIT_FAILURE);
 	}
 
 	wc->u.work = (struct work *)aligned_calloc(sizeof(*work_in));
 	if(wc->u.work == NULL)
 	{
 		applog(LOG_ERR, "Out of memory!");
-		proper_exit(2);
+		proper_exit(EXIT_FAILURE);
 	}
 
 	wc->cmd = WC_SUBMIT_WORK;
@@ -1993,7 +1994,7 @@ start:
 		if(lp_url == NULL)
 		{
 			applog(LOG_ERR, "Out of memory!");
-			proper_exit(2);
+			proper_exit(EXIT_FAILURE);
 		}
 
 		sprintf(lp_url, "%s%s%s", rpc_url, need_slash ? "/" : "", copy_start);
@@ -2201,7 +2202,7 @@ static void show_version_and_exit(void)
 		   PTW32_VERSION_STRING,
 #endif
 		   curl_version());
-	proper_exit(0);
+	proper_exit(EXIT_SUCCESS);
 }
 
 static void show_usage_and_exit(int status)
@@ -2440,7 +2441,7 @@ static void parse_arg(int key, char *arg)
 				if(rpc_user == NULL)
 				{
 					applog(LOG_ERR, "Out of memory!\n");
-					proper_exit(1);
+					proper_exit(EXIT_FAILURE);
 				}
 				strncpy(rpc_user, ap, sp - ap);
 				free(rpc_pass);
@@ -2470,7 +2471,7 @@ static void parse_arg(int key, char *arg)
 		if(rpc_user == NULL)
 		{
 			applog(LOG_ERR, "Out of memory!\n");
-			proper_exit(1);
+			proper_exit(EXIT_FAILURE);
 		}
 		strncpy(rpc_user, arg, p - arg);
 		free(rpc_pass);
@@ -2507,7 +2508,7 @@ static void parse_arg(int key, char *arg)
 		break;
 	case 1006:
 		print_hash_tests();
-		proper_exit(0);
+		proper_exit(EXIT_SUCCESS);
 		break;
 	case 1003:
 		want_longpoll = false;
@@ -2807,11 +2808,11 @@ static void signal_handler(int sig)
 	case SIGINT:
 		signal(sig, SIG_IGN);
 		applog(LOG_INFO, "SIGINT received, exiting");
-		proper_exit(2);
+		proper_exit(EXIT_FAILURE);
 		break;
 	case SIGTERM:
 		applog(LOG_INFO, "SIGTERM received, exiting");
-		proper_exit(2);
+		proper_exit(EXIT_FAILURE);
 		break;
 	}
 }
@@ -2822,11 +2823,11 @@ BOOL WINAPI ConsoleHandler(DWORD dwType)
 	{
 	case CTRL_C_EVENT:
 		applog(LOG_INFO, "CTRL_C_EVENT received, exiting");
-		proper_exit(2);
+		proper_exit(EXIT_FAILURE);
 		break;
 	case CTRL_BREAK_EVENT:
 		applog(LOG_INFO, "CTRL_BREAK_EVENT received, exiting");
-		proper_exit(2);
+		proper_exit(EXIT_FAILURE);
 		break;
 	default:
 		return false;
@@ -2880,6 +2881,10 @@ int main(int argc, char *argv[])
 #else
 	printf("ccminer " PACKAGE_VERSION " (32bit) for nVidia GPUs\n");
 #endif
+	printf("\nBased on pooler cpuminer 2.3.2 and the tpruvot@github fork\n");
+	printf("CUDA support by Christian Buchner, Christian H. and DJM34\n");
+	printf("Includes optimizations and additions implemented by sp-hash, tpruvot, tsiv and others.\n\n");
+
 #ifdef _MSC_VER
 	printf("Compiled with Visual Studio %d ", msver());
 #else
@@ -2893,10 +2898,7 @@ int main(int argc, char *argv[])
 #endif
 #endif
 #endif
-	printf("using Nvidia CUDA Toolkit %d.%d\n\n", CUDART_VERSION / 1000, (CUDART_VERSION % 1000) / 10);
-	printf("Based on pooler cpuminer 2.3.2 and the tpruvot@github fork\n");
-	printf("CUDA support by Christian Buchner, Christian H. and DJM34\n");
-	printf("Includes optimizations implemented by sp-hash, klaust, tpruvot and tsiv.\n\n");
+	printf("using the Nvidia CUDA Toolkit %d.%d\n\n", CUDART_VERSION / 1000, (CUDART_VERSION % 1000) / 10);
 
 #ifdef WIN32
 	if(CUDART_VERSION == 8000 && _MSC_VER > 1900)
@@ -3004,7 +3006,7 @@ int main(int argc, char *argv[])
 		if(rpc_userpass == NULL)
 		{
 			applog(LOG_ERR, "Out of memory!");
-			proper_exit(2);
+			proper_exit(EXIT_FAILURE);
 		}
 		sprintf(rpc_userpass, "%s:%s", rpc_user, rpc_pass);
 	}
@@ -3122,12 +3124,15 @@ int main(int argc, char *argv[])
 	if(work_restart == NULL)
 	{
 		applog(LOG_ERR, "Out of memory!");
-		proper_exit(2);
+		proper_exit(EXIT_FAILURE);
 	}
 
 	thr_info = (struct thr_info *)calloc(opt_n_threads + 4, sizeof(*thr));
-	if(!thr_info)
-		return 1;
+	if(thr_info == NULL)
+	{
+		applog(LOG_ERR, "Out of memory!");
+		proper_exit(EXIT_FAILURE);
+	}
 
 	/* init workio thread info */
 	work_thr_id = opt_n_threads;
@@ -3267,6 +3272,19 @@ int main(int argc, char *argv[])
 		}
 	}
 
+#ifdef USE_WRAPNVML
+	// to monitor gpu activitity during work, a thread is required
+	monitor_thr_id = opt_n_threads + 4;
+	thr = &thr_info[monitor_thr_id];
+	thr->id = monitor_thr_id;
+	thr->q = tq_new();
+	if(thr->q)
+		if(unlikely(pthread_create(&thr->pth, NULL, monitor_thread, thr)))
+		{
+			applog(LOG_ERR, "Monitoring thread %d create failed", i);
+		}
+#endif
+
 	/* start mining threads */
 	for(i = 0; i < opt_n_threads; i++)
 	{
@@ -3279,11 +3297,13 @@ int main(int argc, char *argv[])
 		thr->q = tq_new();
 		if(!thr->q)
 			return 1;
+		pthread_mutex_init(&thr->gpu.monitor.lock, NULL);
+		pthread_cond_init(&thr->gpu.monitor.sampling_signal, NULL);
 
 		if(unlikely(pthread_create(&thr->pth, NULL, miner_thread, thr)))
 		{
 			applog(LOG_ERR, "thread %d create failed", i);
-			return 1;
+			proper_exit(EXIT_FAILURE);
 		}
 	}
 
@@ -3295,9 +3315,26 @@ int main(int argc, char *argv[])
 	/* main loop - simply wait for workio thread to exit */
 	pthread_join(thr_info[work_thr_id].pth, NULL);
 
+	/* wait for mining threads */
+	for(i = 0; i < opt_n_threads; i++)
+	{
+		struct cgpu_info *cgpu = &thr_info[i].gpu;
+		if(monitor_thr_id != -1 && cgpu)
+		{
+			pthread_cond_signal(&cgpu->monitor.sampling_signal);
+		}
+		pthread_join(thr_info[i].pth, NULL);
+	}
+
+	if(monitor_thr_id != -1)
+	{
+		pthread_join(thr_info[monitor_thr_id].pth, NULL);
+		//tq_free(thr_info[monitor_thr_id].q);
+	}
+
 	applog(LOG_INFO, "workio thread dead, exiting.");
 
-	proper_exit(0);
+	proper_exit(EXIT_SUCCESS);
 
 	return 0;
 }

@@ -224,7 +224,7 @@
       <BufferSecurityCheck>true</BufferSecurityCheck>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <SDLCheck>false</SDLCheck>
+      <SDLCheck>true</SDLCheck>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <ControlFlowGuard>Guard</ControlFlowGuard>
