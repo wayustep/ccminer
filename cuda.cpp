@@ -133,7 +133,7 @@ void cuda_print_devices()
 			applog(LOG_ERR, "%s", cudaGetErrorString(err));
 			exit(1);
 		}
-		fprintf(stderr, "GPU #%d: SM %d.%d %s\n", m, props.major, props.minor, device_name[n]);
+		fprintf(stdout, "GPU #%d: SM %d.%d %s\n", m, props.major, props.minor, device_name[n]);
 	}
 }
 
@@ -186,7 +186,7 @@ int cuda_finddevice(char *name)
 uint32_t device_intensity(int thr_id, const char *func, uint32_t defcount)
 {
 	uint32_t throughput = gpus_intensity[thr_id] ? gpus_intensity[thr_id] : defcount;
-	if(opt_api_listen!=0) api_set_throughput(thr_id, throughput);
+	api_set_throughput(thr_id, throughput);
 	return throughput;
 }
 

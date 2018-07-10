@@ -113,6 +113,7 @@ void applog(int prio, const char *fmt, ...)
 			switch(prio)
 			{
 			case LOG_BLUE: prio = LOG_NOTICE; break;
+			case LOG_HW:   prio = LOG_INFO; break;
 			}
 		}
 
@@ -150,6 +151,11 @@ void applog(int prio, const char *fmt, ...)
 		case LOG_INFO:    color = ""; break;
 		case LOG_DEBUG:   color = CL_GRY; break;
 
+		case LOG_HW:
+			color = CL_MAG;
+			prio = LOG_INFO;
+			break;
+
 		case LOG_BLUE:
 			prio = LOG_NOTICE;
 			color = CL_CYN;
@@ -173,8 +179,8 @@ void applog(int prio, const char *fmt, ...)
 				fmt,
 				use_colors ? CL_N : ""
 				);
-		vfprintf(stderr, f, ap);	/* atomic write to stderr */
-		fflush(stderr);
+		vfprintf(stdout, f, ap);	/* atomic write to stderr */
+		fflush(stdout);
 		if (opt_logfile)
 		{
 			fl = (char*)alloca(len);
@@ -223,7 +229,7 @@ void gpulog(int prio, int thr_id, const char *fmt, ...)
 	}
 	else
 	{
-		fprintf(stderr, "%s OOM!\n", __func__);
+		fprintf(stdout, "%s OOM!\n", __func__);
 	}
 
 	va_end(ap);
@@ -1785,11 +1791,11 @@ static bool json_object_set_error(json_t *result, int code, const char *msg)
 /* allow to report algo/device perf to the pool for algo stats */
 static bool stratum_benchdata(json_t *result, json_t *params, int thr_id)
 {
-	char algo[64] = {0};
+	char algo[64] = { 0 };
 	char vid[32], arch[8], driver[32];
 	char *card;
 	char os[8];
-	uint32_t watts = 0; 
+	uint32_t watts = 0, plimit = 0;
 	int dev_id = device_map[thr_id];
 	int cuda_ver = cuda_version();
 	struct cgpu_info *cgpu = &thr_info[thr_id].gpu;
@@ -1800,24 +1806,27 @@ static bool stratum_benchdata(json_t *result, json_t *params, int thr_id)
 #ifdef _WIN64
 	strcpy(os, "win64");
 #else
-	#ifdef WIN32
-		strcpy(os, "win32");
-	#else
-		#ifdef __APPLE__
-			strcpy(os, "OSX");
-		#else
-			strcpy(os, "linux");
-		#endif
-	#endif
+#ifdef WIN32
+	strcpy(os, "win32");
+#else
+#ifdef __APPLE__
+	strcpy(os, "OSX");
+#else
+	strcpy(os, "linux");
+#endif
+#endif
 #endif
 
 #ifdef USE_WRAPNVML
 	cgpu->has_monitoring = true;
-	cgpu->gpu_power = gpu_power(cgpu); // mWatts
+	if(cgpu->monitor.gpu_power)
+		cgpu->gpu_power = cgpu->monitor.gpu_power;
+	else
+		cgpu->gpu_power = gpu_power(cgpu); // mWatts
 	watts = (cgpu->gpu_power >= 1000) ? cgpu->gpu_power / 1000 : 0; // ignore nvapi %
-	gpu_info(cgpu);
+	plimit = device_plimit[dev_id] > 0 ? device_plimit[dev_id] : 0;
+	gpu_info(cgpu); // vid/pid
 #endif
-	cuda_gpu_clocks(cgpu);
 	get_currentalgo(algo, sizeof(algo));
 
 	card = device_name[dev_id];
@@ -1841,7 +1850,10 @@ static bool stratum_benchdata(json_t *result, json_t *params, int thr_id)
 	json_object_set_new(val, "arch", json_string(arch));
 	json_object_set_new(val, "freq", json_integer(cgpu->gpu_clock / 1000));
 	json_object_set_new(val, "memf", json_integer(cgpu->gpu_memclock / 1000));
+	json_object_set_new(val, "curr_freq", json_integer(cgpu->monitor.gpu_clock));
+	json_object_set_new(val, "curr_memf", json_integer(cgpu->monitor.gpu_memclock));
 	json_object_set_new(val, "power", json_integer(watts));
+	json_object_set_new(val, "plimit", json_integer(plimit));
 	json_object_set_new(val, "khashes", json_real(cgpu->khashes));
 	json_object_set_new(val, "intensity", json_real(cgpu->intensity));
 	json_object_set_new(val, "throughput", json_integer(cgpu->throughput));

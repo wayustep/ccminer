@@ -94,7 +94,7 @@ struct workio_cmd {
 bool opt_debug_diff = false;
 bool opt_debug_threads = false;
 bool opt_showdiff = true;
-bool opt_hwmonitor = true;
+bool opt_hwmonitor = false;
 
 const char *algo_names[] =
 {
@@ -297,6 +297,7 @@ Options:\n\
   -e                    disable extranonce\n\
   -q, --quiet           disable per-thread hashmeter output\n\
       --no-color        disable colored output\n\
+      --hwmonitor       show data like temperature, fan speed, etc.\n\
   -D, --debug           enable debug output\n\
   -P, --protocol-dump   verbose dump of protocol-level activities\n\
       --cpu-affinity    set process affinity to cpu core(s), mask 0x3 for cores 0 and 1\n\
@@ -379,6 +380,7 @@ static struct option const options[] =
 	{"pstate", 1, NULL, 1072},
 	{"plimit", 1, NULL, 1073},
 	{"logfile", 1, NULL, 1074},
+	{"hwmonitor", 0, NULL, 1075},
 	{0, 0, 0, 0}
 };
 
@@ -1389,6 +1391,7 @@ static void *miner_thread(void *userdata)
 {
 	struct thr_info *mythr = (struct thr_info *)userdata;
 	int thr_id = mythr->id;
+	struct cgpu_info *cgpu = &thr_info[thr_id].gpu;
 	struct work work;
 	uint64_t loopcnt = 0;
 	uint32_t max_nonce;
@@ -1572,7 +1575,7 @@ static void *miner_thread(void *userdata)
 		if(have_stratum)
 			max64time = LP_SCANTIME;
 		else
-			max64time = (uint32_t)max(1, scan_time + g_work_time - time(NULL));
+			max64time = (uint32_t)max((time_t)1, (time_t)scan_time + g_work_time - time(NULL));
 
 		max64 = max64time * (uint32_t)thr_hashrates[thr_id];
 
@@ -1634,7 +1637,7 @@ static void *miner_thread(void *userdata)
 		max64 = max(minmax, max64);
 
 		// we can't scan more than uint capacity
-		max64 = min(UINT32_MAX, max64);
+		max64 = min((uint64_t)0xffffffff, max64);
 		start_nonce = nonceptr[0];
 
 		/* never let small ranges at end */
@@ -1668,6 +1671,10 @@ static void *miner_thread(void *userdata)
 		{
 			mining_has_stopped[thr_id] = true;
 			pthread_exit(nullptr);
+		}
+		if(cgpu && loopcnt > 1)
+		{
+			cgpu->monitor.sampling_flag = true;
 		}
 
 		/* scan nonces for a proof-of-work hash */
@@ -1843,6 +1850,11 @@ static void *miner_thread(void *userdata)
 				applog(LOG_NOTICE, CL_CYN "found => %08x" CL_GRN " %08x", nonceptr[12], swab32(nonceptr[12])); // data[21]
 		}
 		timeval_subtract(&diff, &tv_end, &tv_start);
+
+		if(cgpu && diff.tv_sec)
+		{ // stop monitoring
+			cgpu->monitor.sampling_flag = false;
+		}
 
 		if(diff.tv_sec > 0 || (diff.tv_sec == 0 && diff.tv_usec>2000)) // avoid totally wrong hash rates
 		{
@@ -2208,7 +2220,7 @@ static void show_version_and_exit(void)
 static void show_usage_and_exit(int status)
 {
 	if(status)
-		fprintf(stderr, "Try `" PROGRAM_NAME " --help' for more information.\n");
+		fprintf(stdout, "Try `" PROGRAM_NAME " --help' for more information.\n");
 	else
 		printf(usage);
 	proper_exit(status);
@@ -2707,6 +2719,9 @@ static void parse_arg(int key, char *arg)
 			printf("\nNo logfile name.\nLogging to file is disabled\n ");
 	}
 	break;
+	case 1075:
+		opt_hwmonitor = true;
+		break;
 	default:
 		printf(usage);
 		exit(EXIT_FAILURE);
@@ -2788,7 +2803,7 @@ static void parse_cmdline(int argc, char *argv[])
 	}
 	if(optind < argc)
 	{
-		fprintf(stderr, "%s: unsupported non-option argument '%s'\n",
+		fprintf(stdout, "%s: unsupported non-option argument '%s'\n",
 				argv[0], argv[optind]);
 		show_usage_and_exit(1);
 	}
@@ -2996,7 +3011,7 @@ int main(int argc, char *argv[])
 	}
 	if(!opt_benchmark && !rpc_url)
 	{
-		fprintf(stderr, "%s: no URL supplied\n", argv[0]);
+		fprintf(stdout, "%s: no URL supplied\n", argv[0]);
 		show_usage_and_exit(1);
 	}
 
@@ -3271,6 +3286,13 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 	}
+	for(i = 0; i < opt_n_threads; i++)
+	{
+		thr = &thr_info[i];
+		thr->gpu.monitor.sampling_flag = false;
+		pthread_mutex_init(&thr->gpu.monitor.lock, NULL);
+		pthread_cond_init(&thr->gpu.monitor.sampling_signal, NULL);
+	}
 
 #ifdef USE_WRAPNVML
 	// to monitor gpu activitity during work, a thread is required
@@ -3297,8 +3319,6 @@ int main(int argc, char *argv[])
 		thr->q = tq_new();
 		if(!thr->q)
 			return 1;
-		pthread_mutex_init(&thr->gpu.monitor.lock, NULL);
-		pthread_cond_init(&thr->gpu.monitor.sampling_signal, NULL);
 
 		if(unlikely(pthread_create(&thr->pth, NULL, miner_thread, thr)))
 		{
@@ -3318,11 +3338,6 @@ int main(int argc, char *argv[])
 	/* wait for mining threads */
 	for(i = 0; i < opt_n_threads; i++)
 	{
-		struct cgpu_info *cgpu = &thr_info[i].gpu;
-		if(monitor_thr_id != -1 && cgpu)
-		{
-			pthread_cond_signal(&cgpu->monitor.sampling_signal);
-		}
 		pthread_join(thr_info[i].pth, NULL);
 	}
 
