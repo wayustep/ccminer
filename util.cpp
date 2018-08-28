@@ -2106,6 +2106,7 @@ bool tq_push(struct thread_q *tq, void *data)
 	bool rc = true;
 
 	ent = (struct tq_ent *)calloc(1, sizeof(*ent));
+	applog(LOG_WARNING, "%p tq_push calloc(1, sizeof(*ent))", (void*)ent);
 	if(ent == NULL)
 	{
 		applog(LOG_ERR, "Out of memory!");
@@ -2123,6 +2124,7 @@ bool tq_push(struct thread_q *tq, void *data)
 	}
 	else
 	{
+		applog(LOG_WARNING, "%p tq_push free(ent)", (void*)ent);
 		free(ent);
 		rc = false;
 	}
@@ -2135,7 +2137,6 @@ bool tq_push(struct thread_q *tq, void *data)
 
 void *tq_pop(struct thread_q *tq, const struct timespec *abstime)
 {
-	struct tq_ent *ent;
 	void *rval = NULL;
 	int rc;
 
@@ -2154,10 +2155,11 @@ void *tq_pop(struct thread_q *tq, const struct timespec *abstime)
 		goto out;
 
 pop:
-	ent = list_entry(tq->q.next, struct tq_ent, q_node);
+	struct tq_ent *ent = (struct tq_ent *)(((char *)(tq->q.next)) - offsetof(struct tq_ent, q_node));
 	rval = ent->data;
 
 	list_del(&ent->q_node);
+	applog(LOG_WARNING, "%p tq_pop free(ent)", (void*)ent);
 	free(ent);
 
 out:
