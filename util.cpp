@@ -2137,6 +2137,7 @@ bool tq_push(struct thread_q *tq, void *data)
 
 void *tq_pop(struct thread_q *tq, const struct timespec *abstime)
 {
+	struct tq_ent *ent;
 	void *rval = NULL;
 	int rc;
 
@@ -2155,7 +2156,7 @@ void *tq_pop(struct thread_q *tq, const struct timespec *abstime)
 		goto out;
 
 pop:
-	struct tq_ent *ent = (struct tq_ent *)(((char *)(tq->q.next)) - offsetof(struct tq_ent, q_node));
+	ent = (struct tq_ent *)(((char *)(tq->q.next)) - offsetof(struct tq_ent, q_node));
 	rval = ent->data;
 
 	list_del(&ent->q_node);
