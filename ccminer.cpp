@@ -1034,6 +1034,7 @@ static void workio_cmd_free(struct workio_cmd *wc)
 	switch(wc->cmd)
 	{
 	case WC_SUBMIT_WORK:
+		applog(LOG_WARNING, "%p workio_cmd_free free(wc->u.work)", (void*)(wc->u.work));
 		free(wc->u.work);
 		break;
 	default: /* do nothing */
@@ -1041,6 +1042,7 @@ static void workio_cmd_free(struct workio_cmd *wc)
 	}
 
 	memset(wc, 0, sizeof(*wc));	/* poison */
+	applog(LOG_WARNING, "%p workio_cmd_free free(wc)", (void*)wc);
 	free(wc);
 }
 
@@ -1214,6 +1216,7 @@ static bool submit_work(struct thr_info *thr, const struct work *work_in)
 	struct workio_cmd *wc;
 	/* fill out work request message */
 	wc = (struct workio_cmd *)calloc(1, sizeof(struct workio_cmd));
+	applog(LOG_WARNING, "%p submit_work calloc(1, sizeof(struct workio_cmd))", (void*)wc);
 	if(wc == NULL)
 	{
 		applog(LOG_ERR, "Out of memory!");
@@ -1221,6 +1224,7 @@ static bool submit_work(struct thr_info *thr, const struct work *work_in)
 	}
 
 	wc->u.work = (struct work *)calloc(1, sizeof(*work_in));
+	applog(LOG_WARNING, "%p submit_work calloc(1, sizeof(*work_in))", (void*)(wc->u.work));
 	if(wc->u.work == NULL)
 	{
 		applog(LOG_ERR, "Out of memory!");
