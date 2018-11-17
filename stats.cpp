@@ -23,7 +23,7 @@ extern int opt_statsavg;
 /**
  * Store speed per thread
  */
-void stats_remember_speed(int thr_id, uint32_t hashcount, double hashrate, uint8_t found, uint32_t height)
+void stats_remember_speed(int thr_id, uint64_t hashcount, double hashrate, uint8_t found, uint32_t height)
 {
 	uint8_t  gpu = (uint8_t) device_map[thr_id];
 	const uint64_t key = ((uid++ % UINT32_MAX) << 32) + gpu;

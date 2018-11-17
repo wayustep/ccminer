@@ -42,7 +42,7 @@ static __inline uint32_t swab32_if(uint32_t val, bool iftrue)
 
 int scanhash_skeincoin(int thr_id, uint32_t *pdata,
 								  uint32_t *ptarget, uint32_t max_nonce,
-								  uint32_t *hashes_done)
+								  uint64_t *hashes_done)
 {
 	static THREAD uint32_t *foundnonces = nullptr;
 

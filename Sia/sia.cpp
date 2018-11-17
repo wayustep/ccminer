@@ -208,10 +208,13 @@ void siahash(const void *data, unsigned int len, void *hash)
 
 /***************************************************************************/
 
-int scanhash_sia(int thr_id, uint32_t *pdata, uint32_t *ptarget, uint32_t max_nonce, uint32_t *hashes_done)
+int scanhash_sia(int thr_id, uint32_t *pdata, uint32_t *ptarget, uint64_t max_nonce, uint64_t *hashes_done, uint64_t *results)
 {
-	static THREAD uint32_t *h_nounce = nullptr;
-	const uint32_t first_nonce = pdata[8];
+	static THREAD uint64_t *h_nounce = nullptr;
+	int remaindr = ((uint64_t)pdata[8] + ((uint64_t)pdata[9] << 32)) % 1029;
+	if(remaindr != 0)
+		pdata[8] += 1029 - remaindr;
+	const uint64_t first_nonce = (uint64_t)pdata[8] + ((uint64_t)pdata[9]<<32);
 	static THREAD uint32_t throughputmax;
 
 	if(opt_benchmark)
@@ -226,17 +229,17 @@ int scanhash_sia(int thr_id, uint32_t *pdata, uint32_t *ptarget, uint32_t max_no
 		CUDA_SAFE_CALL(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
 
 		CUDA_SAFE_CALL(cudaStreamCreate(&gpustream[thr_id]));
-		CUDA_SAFE_CALL(cudaMallocHost(&h_nounce, MAXRESULTS * sizeof(uint32_t)));
+		CUDA_SAFE_CALL(cudaMallocHost(&h_nounce, MAXRESULTS * sizeof(uint64_t)));
 		sia_gpu_init(thr_id);
 
-		throughputmax = device_intensity(device_map[thr_id], __func__, 1U << 28);
-		if(throughputmax == 1<<28)
-			applog(LOG_INFO, "GPU #%d: using default intensity 28", device_map[thr_id]);
+		throughputmax = device_intensity(device_map[thr_id], __func__, 1U << 19);
+		if(throughputmax == 1<<19)
+			applog(LOG_INFO, "GPU #%d: using default intensity 19", device_map[thr_id]);
 		mining_has_stopped[thr_id] = false;
 		init = true;
 	}
-	uint32_t throughput = min(throughputmax, (max_nonce - first_nonce));
-	throughput -= throughput % (blocksize*npt);
+	uint32_t throughput = min((uint64_t)throughputmax, (max_nonce - first_nonce));
+//	throughput -= throughput % (blocksize*npt);
 
 	sia_precalc(thr_id, gpustream[thr_id], (uint64_t *)pdata);
 
@@ -261,26 +264,26 @@ int scanhash_sia(int thr_id, uint32_t *pdata, uint32_t *ptarget, uint32_t max_no
 			uint64_t vhash64[4] = {0};
 			if(opt_verify)
 			{
-				le32enc(&endiandata[8], h_nounce[0]);
+				*((uint64_t*)(endiandata+8)) = h_nounce[0];
 				siahash(endiandata, 80, vhash64);
 			}
 			if(swab64(vhash64[0]) <= Htarg && fulltest_sia(vhash64, (uint64_t*)ptarget))
 			{
 				int res = 1;
-				*hashes_done = pdata[8] - first_nonce + throughput;
-				if(opt_benchmark || opt_debug)  applog(LOG_INFO, "GPU #%d: Found nonce %08x", device_map[thr_id], h_nounce[0]);
+				*hashes_done = (uint64_t)pdata[8] + ((uint64_t)pdata[9] << 32) - first_nonce + (uint64_t)throughput*1029 + remaindr;
+				if(opt_benchmark || opt_debug)  applog(LOG_INFO, "GPU #%d: Found nonce %16llx", device_map[thr_id], h_nounce[0]);
 				// check if there was some other ones...
 				if(h_nounce[1] != 0)
 				{
 					if(opt_verify)
 					{
-						le32enc(&endiandata[8], h_nounce[1]);
+						*((uint64_t*)(endiandata + 8)) = h_nounce[1];
 						siahash(vhash64, 80, endiandata);
 
 					}
 					if(swab64(vhash64[0]) <= Htarg && fulltest_sia(vhash64, (uint64_t*)ptarget))
 					{
-						pdata[20] = h_nounce[1];
+						results[1] = h_nounce[1];
 						res++;
 						if(opt_benchmark || opt_debug)  applog(LOG_INFO, "GPU #%d: Found second nonce", device_map[thr_id]);
 					}
@@ -290,7 +293,7 @@ int scanhash_sia(int thr_id, uint32_t *pdata, uint32_t *ptarget, uint32_t max_no
 							applog(LOG_INFO, "GPU #%d: result does not validate on CPU!", device_map[thr_id]);
 					}
 				}
-				pdata[8] = h_nounce[0];
+				results[0] = h_nounce[0];
 //				applog(LOG_INFO, "hashes done = %08x", *hashes_done);
 				return res;
 			}
@@ -300,10 +303,10 @@ int scanhash_sia(int thr_id, uint32_t *pdata, uint32_t *ptarget, uint32_t max_no
 					applog(LOG_INFO, "GPU #%d: result does not validate on CPU!", device_map[thr_id]);
 			}
 		}
-		pdata[8] += throughput;
+		*(uint64_t*)(pdata+8) += (uint64_t)throughput*1029;
 		CUDA_SAFE_CALL(cudaGetLastError());
 
-	} while(!work_restart[thr_id].restart && ((uint64_t)max_nonce >((uint64_t)pdata[8] + (uint64_t)throughput)));
-	*hashes_done = pdata[8] - first_nonce;
+	} while(!work_restart[thr_id].restart && ((uint64_t)max_nonce >((uint64_t)pdata[8] + (uint64_t)throughput*1029)));
+	*hashes_done = (uint64_t)pdata[8] + ((uint64_t)pdata[9] << 32) - first_nonce + remaindr;
 	return 0;
 }

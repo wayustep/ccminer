@@ -24,7 +24,7 @@ extern "C" void my_fugue256_addbits_and_close(void *cc, unsigned ub, unsigned n,
 #define SWAP32(x) swab32(x)
 
 extern int scanhash_fugue256(int thr_id, uint32_t *pdata, uint32_t *ptarget,
-	uint32_t max_nonce, uint32_t *hashes_done)
+	uint32_t max_nonce, uint64_t *hashes_done)
 {
 	uint32_t start_nonce = pdata[19];
 	unsigned int intensity = (device_sm[device_map[thr_id]] > 500) ? 22 : 19;

@@ -286,113 +286,113 @@ bool fulltest(const uint32_t *hash, const uint32_t *target);
 
 extern int scanhash_deep(int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce,
-	uint32_t *hashes_done);
+	uint64_t *hashes_done);
 
 extern int scanhash_doom(int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce,
-	uint32_t *hashes_done);
+	uint64_t *hashes_done);
 
 extern int scanhash_fugue256(int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce,
-	uint32_t *hashes_done);
+	uint64_t *hashes_done);
 
 extern int scanhash_groestlcoin(int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce,
-	uint32_t *hashes_done);
+	uint64_t *hashes_done);
 
 extern int scanhash_c11(int thr_id, uint32_t *pdata,
 						uint32_t *ptarget, uint32_t max_nonce,
-						uint32_t *hashes_done);
+						uint64_t *hashes_done);
 
 extern int scanhash_keccak256(int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce,
-	uint32_t *hashes_done);
+	uint64_t *hashes_done);
 
 extern int scanhash_myriad(int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce,
-	uint32_t *hashes_done);
+	uint64_t *hashes_done);
 
 extern int scanhash_jackpot(int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce,
-	uint32_t *hashes_done);
+	uint64_t *hashes_done);
 
 extern int scanhash_quark(int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce,
-	uint32_t *hashes_done);
+	uint64_t *hashes_done);
 
 
 extern int scanhash_blake256(int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce,
-	uint32_t *hashes_done, int8_t blakerounds);
+	uint64_t *hashes_done, int8_t blakerounds);
 
 extern int scanhash_fresh(int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce,
-	uint32_t *hashes_done);
+	uint64_t *hashes_done);
 
 extern int scanhash_lyra2v2(int thr_id, uint32_t *pdata,
 	const uint32_t *ptarget, uint32_t max_nonce,
-	uint32_t *hashes_done);
+	uint64_t *hashes_done);
 
 extern int scanhash_nist5(int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce,
-	uint32_t *hashes_done);
+	uint64_t *hashes_done);
 
 extern int scanhash_pentablake(int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce,
-	uint32_t *hashes_done);
+	uint64_t *hashes_done);
 
 extern int scanhash_qubit(int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce,
-	uint32_t *hashes_done);
+	uint64_t *hashes_done);
 
 
 extern int scanhash_skeincoin(int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce,
-	uint32_t *hashes_done);
+	uint64_t *hashes_done);
 
 extern int scanhash_s3(int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce,
-	uint32_t *hashes_done);
+	uint64_t *hashes_done);
 
 extern int scanhash_whc(int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce,
-	uint32_t *hashes_done);
+	uint64_t *hashes_done);
 
 extern int scanhash_whirlpoolx(int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce,
-	uint32_t *hashes_done);
+	uint64_t *hashes_done);
 
 extern int scanhash_x11(int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce,
-	uint32_t *hashes_done);
+	uint64_t *hashes_done);
 
 extern int scanhash_x13(int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce,
-	uint32_t *hashes_done);
+	uint64_t *hashes_done);
 
 extern int scanhash_x14(int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce,
-	uint32_t *hashes_done);
+	uint64_t *hashes_done);
 
 extern int scanhash_x15(int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce,
-	uint32_t *hashes_done);
+	uint64_t *hashes_done);
 
 extern int scanhash_x17(int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce,
-	uint32_t *hashes_done);
+	uint64_t *hashes_done);
 
 extern int scanhash_bitcoin(int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce,
-	uint32_t *hashes_done);
+	uint64_t *hashes_done);
 
 extern int scanhash_neoscrypt(bool stratum, int thr_id, uint32_t *pdata,
 	uint32_t *ptarget, uint32_t max_nonce,
-	uint32_t *hashes_done);
+	uint64_t *hashes_done);
 
 extern int scanhash_sia(int thr_id, uint32_t *pdata,
-												uint32_t *ptarget, uint32_t max_nonce,
-												uint32_t *hashes_done);
+												uint32_t *ptarget, uint64_t max_nonce,
+												uint64_t *hashes_done, uint64_t *results);
 /* api related */
 void *api_thread(void *userdata);
 void api_set_throughput(int thr_id, uint32_t throughput);
@@ -457,7 +457,7 @@ struct thr_api {
 struct stats_data {
 	uint32_t uid;
 	uint32_t tm_stat;
-	uint32_t hashcount;
+	uint64_t hashcount;
 	uint32_t height;
 	double difficulty;
 	double hashrate;
@@ -472,8 +472,8 @@ struct hashlog_data {
 	uint32_t height;
 	uint32_t njobid;
 	uint32_t nonce;
-	uint32_t scanned_from;
-	uint32_t scanned_to;
+	uint64_t scanned_from;
+	uint64_t scanned_to;
 	uint32_t last_from;
 	uint32_t tm_add;
 	uint32_t tm_upd;
@@ -636,8 +636,8 @@ struct work {
 	double difficulty;
 	uint32_t height;
 
-	uint32_t scanned_from;
-	uint32_t scanned_to;
+	uint64_t scanned_from;
+	uint64_t scanned_to;
 };
 
 enum sha_algos
@@ -697,7 +697,7 @@ void hashlog_purge_all(void);
 void hashlog_dump_job(char* jobid);
 void hashlog_getmeminfo(uint64_t *mem, uint32_t *records);
 
-void stats_remember_speed(int thr_id, uint32_t hashcount, double hashrate, uint8_t found, uint32_t height);
+void stats_remember_speed(int thr_id, uint64_t hashcount, double hashrate, uint8_t found, uint32_t height);
 double stats_get_speed(int thr_id, double def_speed);
 int  stats_get_history(int thr_id, struct stats_data *data, int max_records);
 void stats_purge_old(void);

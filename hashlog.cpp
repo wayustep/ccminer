@@ -261,7 +261,7 @@ void hashlog_dump_job(char* jobid)
 				if (i->first != keypfx)
 					applog(LOG_DEBUG, CL_YLW "job %s, found %08x ", jobid, LO_DWORD(i->first));
 				else
-					applog(LOG_DEBUG, CL_YLW "job %s(%u) range done: %08x-%08x", jobid,
+					applog(LOG_DEBUG, CL_YLW "job %s(%u) range done: %016llx-%016llx", jobid,
 						i->second.height, i->second.scanned_from, i->second.scanned_to);
 			}
 			i++;

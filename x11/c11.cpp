@@ -123,7 +123,7 @@ static THREAD uint32_t *d_hash = nullptr;
 
 int scanhash_c11(int thr_id, uint32_t *pdata,
 				 uint32_t *ptarget, uint32_t max_nonce,
-				 uint32_t *hashes_done)
+				 uint64_t *hashes_done)
 {
 	uint32_t foundnonces[2];
 	const uint32_t first_nonce = pdata[19];

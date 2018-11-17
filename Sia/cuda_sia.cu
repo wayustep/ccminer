@@ -30,7 +30,7 @@ PERFORMANCE OF THIS SOFTWARE.
 #endif
 
 static THREAD uint64_t *vpre_h;
-static THREAD uint32_t *nonceOut_d;
+static THREAD uint64_t *nonceOut_d;
 static THREAD uint64_t *hash_d;
 __constant__ uint64_t vpre[16];
 __constant__ uint64_t header[10];
@@ -68,15 +68,17 @@ static uint64_t __swap_hilo(const uint64_t source)
 
 __device__ unsigned int numberofresults;
 
-__global__ void __launch_bounds__(blocksize, 3) siakernel(uint32_t * __restrict__ nonceOut, uint64_t target, uint64_t startnonce)
+__global__ void __launch_bounds__(blocksize, 3) siakernel(uint64_t * __restrict__ nonceOut, uint64_t target, uint64_t startnonce, uint32_t threads)
 {
+	if(blockDim.x * blockIdx.x + threadIdx.x >= threads)
+		return;
 	uint64_t v[16];
-	const uint64_t start = startnonce + (blockDim.x * blockIdx.x + threadIdx.x)*npt;
-	const uint64_t end = start + npt;
+	const uint64_t start = startnonce + (blockDim.x * blockIdx.x + threadIdx.x) * npt * 1029;
+	const uint64_t end = start + npt * 1029;
 
 	numberofresults = 0;
 
-	for(uint64_t n = start; n < end; n++)
+	for(uint64_t n = start; n < end; n+=1029)
 	{
 		v[2] = 0x5BF2CD1EF9D6B596u + n; v[14] = __swap_hilo(~0x1f83d9abfb41bd6bu ^ v[2]); v[10] = 0x3c6ef372fe94f82bu + v[14]; v[6] = __byte_perm_64(0x1f83d9abfb41bd6bu ^ v[10], 0x6543, 0x2107);
 		v[2] = v[2] + v[6] + header[5]; v[14] = __byte_perm_64(v[14] ^ v[2], 0x5432, 0x1076); v[10] = v[10] + v[14]; v[6] = ROTR64(v[6] ^ v[10], 63);
@@ -280,24 +282,24 @@ __global__ void __launch_bounds__(blocksize, 3) siakernel(uint32_t * __restrict_
 		{
 			int i = atomicAdd(&numberofresults, 1);
 			if(i < MAXRESULTS)
-				nonceOut[i] = n & 0xffffffff;
+				nonceOut[i] = n;
 			return;
 		}
 	}
 }
 
-void sia_gpu_hash(cudaStream_t cudastream, int thr_id, uint32_t threads, uint32_t *nonceOut, uint64_t target, uint64_t startnonce)
+void sia_gpu_hash(cudaStream_t cudastream, int thr_id, uint32_t threads, uint64_t *nonceOut, uint64_t target, uint64_t startnonce)
 {
-	siakernel << <threads / blocksize / npt, blocksize, 0, cudastream >> >(nonceOut_d, target, startnonce);
+	siakernel << <threads / blocksize / npt, blocksize, 0, cudastream >> >(nonceOut_d, target, startnonce, threads);
 	CUDA_SAFE_CALL(cudaGetLastError());
-	CUDA_SAFE_CALL(cudaMemcpyAsync(nonceOut, nonceOut_d, 4 * MAXRESULTS, cudaMemcpyDeviceToHost, cudastream));
+	CUDA_SAFE_CALL(cudaMemcpyAsync(nonceOut, nonceOut_d, 8 * MAXRESULTS, cudaMemcpyDeviceToHost, cudastream));
 	CUDA_SAFE_CALL(cudaStreamSynchronize(cudastream));
 }
 
 void sia_gpu_init(int thr_id)
 {
 	CUDA_SAFE_CALL(cudaMallocHost(&vpre_h, 16 * 8));
-	CUDA_SAFE_CALL(cudaMalloc(&nonceOut_d, MAXRESULTS * 4));
+	CUDA_SAFE_CALL(cudaMalloc(&nonceOut_d, MAXRESULTS * 8));
 	CUDA_SAFE_CALL(cudaMalloc(&hash_d, 4 * 8));
 }
 
@@ -310,5 +312,5 @@ void sia_precalc(int thr_id, cudaStream_t cudastream, const uint64_t *blockHeade
 
 	CUDA_SAFE_CALL(cudaMemcpyToSymbolAsync(vpre, vpre_h, 16 * 8, 0, cudaMemcpyHostToDevice, cudastream));
 	CUDA_SAFE_CALL(cudaMemcpyToSymbolAsync(header, blockHeader, 10 * 8, 0, cudaMemcpyHostToDevice, cudastream));
-	CUDA_SAFE_CALL(cudaMemsetAsync(nonceOut_d, 0, 4 * MAXRESULTS, cudastream));
+	CUDA_SAFE_CALL(cudaMemsetAsync(nonceOut_d, 0, 8 * MAXRESULTS, cudastream));
 }

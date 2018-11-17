@@ -683,7 +683,7 @@ static void blake256_cpu_setBlock_16(int thr_id, uint32_t *penddata, const uint3
 #endif
 
 extern int scanhash_blake256(int thr_id, uint32_t *pdata, uint32_t *ptarget,
-	uint32_t max_nonce, uint32_t *hashes_done, int8_t blakerounds=14)
+	uint32_t max_nonce, uint64_t *hashes_done, int8_t blakerounds=14)
 {
 	const uint32_t first_nonce = pdata[19];
 	uint32_t _ALIGN(64) endiandata[20];

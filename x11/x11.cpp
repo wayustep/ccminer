@@ -124,7 +124,7 @@ void x11hash(void *output, const void *input)
 
 extern int scanhash_x11(int thr_id, uint32_t *pdata,
     uint32_t *ptarget, uint32_t max_nonce,
-    uint32_t *hashes_done)
+    uint64_t *hashes_done)
 {
 	static THREAD uint32_t *d_hash = nullptr;
 	static THREAD uint32_t *h_found = nullptr;

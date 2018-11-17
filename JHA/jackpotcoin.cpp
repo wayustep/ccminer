@@ -76,7 +76,7 @@ unsigned int jackpothash(void *state, const void *input)
 
 extern int scanhash_jackpot(int thr_id, uint32_t *pdata,
     uint32_t *ptarget, uint32_t max_nonce,
-    uint32_t *hashes_done)
+    uint64_t *hashes_done)
 {
 	const uint32_t first_nonce = pdata[19];
 

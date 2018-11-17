@@ -50,7 +50,7 @@ void groestlhash(void *state, const void *input)
 extern cudaStream_t gpustream[MAX_GPUS];
 
 extern int scanhash_groestlcoin(int thr_id, uint32_t *pdata, uint32_t *ptarget,
-    uint32_t max_nonce, uint32_t *hashes_done)
+    uint32_t max_nonce, uint64_t *hashes_done)
 {
 	static THREAD uint32_t *foundNounce = nullptr;
 

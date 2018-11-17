@@ -740,7 +740,7 @@ static bool submit_upstream_work(CURL *curl, struct work *work)
 		}
 
 
-		if(check_dups)
+		if(opt_algo != ALGO_SIA && check_dups)
 			sent = hashlog_already_submittted(work->job_id, nonce);
 		if(sent > 0)
 		{
@@ -774,9 +774,8 @@ static bool submit_upstream_work(CURL *curl, struct work *work)
 			return false;
 		}
 
-		if(check_dups)
+		if(opt_algo != ALGO_SIA && check_dups)
 			hashlog_remember_submit(work, nonce);
-
 	}
 	else
 	{
@@ -1312,9 +1311,6 @@ static bool stratum_gen_work(struct stratum_ctx *sctx, struct work *work)
 			i++;
 		} while(i < (int)sctx->xnonce2_size && sctx->job.xnonce2[i - 1] == 0);
 	}
-	static uint32_t highnonce = 0;
-	if(opt_algo == ALGO_SIA)
-		highnonce++;
 
 	/* Assemble block header */
 	memset(work->data, 0, sizeof(work->data));
@@ -1335,7 +1331,7 @@ static bool stratum_gen_work(struct stratum_ctx *sctx, struct work *work)
 		for(i = 0; i < 8; i++)
 			work->data[i] = le32dec((uint32_t *)sctx->job.prevhash + i);
 		work->data[8] = 0; // nonce
-		work->data[9] = highnonce;
+		work->data[9] = 0;
 		work->data[10] = le32dec(sctx->job.ntime);
 		work->data[11] = 0;
 		for(i = 0; i < 8; i++)
@@ -1393,12 +1389,16 @@ static void *miner_thread(void *userdata)
 	struct cgpu_info *cgpu = &thr_info[thr_id].gpu;
 	struct work work;
 	uint64_t loopcnt = 0;
-	uint32_t max_nonce;
-	uint64_t end_nonce = 0x100000000ull / opt_n_threads * (thr_id + 1) - 1;
+	uint64_t max_nonce;
+	uint64_t end_nonce; 
 	bool extrajob = false;
 	char s[16];
 	int rc = 0;
-
+	uint64_t siaresults[2];
+	if(opt_algo != ALGO_SIA)
+		end_nonce = 0x100000000ull / opt_n_threads * (thr_id + 1) - 1;
+	else
+		end_nonce = 0xffffffffffffffffull / opt_n_threads * (thr_id + 1) - 1;
 	memset(&work, 0, sizeof(work)); // prevent work from being used uninitialized
 
 	if(opt_priority > 0)
@@ -1474,10 +1474,9 @@ static void *miner_thread(void *userdata)
 			nonceptr = (uint32_t*)(((char*)work.data) + wcmplen);
 		else
 			nonceptr = (uint32_t*)(((char*)work.data) + 8*4);
-
 		struct timeval tv_start, tv_end, diff;
-		uint32_t hashes_done = 0;
-		uint32_t start_nonce;
+		uint64_t hashes_done = 0;
+		uint64_t start_nonce;
 		uint32_t scan_time = have_longpoll ? LP_SCANTIME : opt_scantime;
 		uint64_t max64, minmax;
 
@@ -1486,9 +1485,21 @@ static void *miner_thread(void *userdata)
 			pthread_mutex_lock(&g_work_lock);
 			if(loopcnt == 0 || time(NULL) >= (g_work_time + opt_scantime))
 				extrajob = true;
-			if(nonceptr[0] >= end_nonce - 0x00004000 || extrajob)
+			bool exhausted = false;
+			if(opt_algo != ALGO_SIA)
+			{
+				if(nonceptr[0] >= end_nonce - 0x00004000)
+					exhausted = true;
+			}
+			else
+			{
+				if(((uint64_t)nonceptr[1]  << 32) + nonceptr[0] >= end_nonce - 0x00004000)
+					exhausted = true;
+			}
+			if(exhausted || extrajob)
 			{
 				extrajob = false;
+				exhausted = false;
 				int loop = 0;
 				while(!stratum_gen_work(&stratum, &g_work) && !stop_mining)
 				{
@@ -1527,7 +1538,7 @@ static void *miner_thread(void *userdata)
 			if(opt_debug)
 			{
 				uint64_t target64 = g_work.target[7] * 0x100000000ULL + g_work.target[6];
-				applog(LOG_DEBUG, "job %s target change: %llx (%.1f)", g_work.job_id, target64, g_work.difficulty);
+				applog(LOG_DEBUG, "job %s target change: %016llx (%.1f)", g_work.job_id, target64, g_work.difficulty);
 			}
 			memcpy(work.target, g_work.target, sizeof(work.target));
 			work.difficulty = g_work.difficulty;
@@ -1538,7 +1549,7 @@ static void *miner_thread(void *userdata)
 		if(opt_algo != ALGO_SIA)
 			different = memcmp(work.data, g_work.data, wcmplen);
 		else
-			different = memcmp(work.data, g_work.data, 7*4) || memcmp(work.data + 9, g_work.data + 9, 44);
+			different = memcmp(work.data, g_work.data, 7*4) || memcmp(work.data + 20, g_work.data + 20, 40);
 		if(different)
 		{
 			if(opt_debug)
@@ -1557,10 +1568,15 @@ static void *miner_thread(void *userdata)
 				}
 			}
 #endif
-			if(opt_debug && opt_algo == ALGO_SIA)
-				applog(LOG_DEBUG, "thread %d: high nonce = %08X", thr_id, work.data[9]);
 			memcpy(&work, &g_work, sizeof(struct work));
-			nonceptr[0] = (uint32_t)((0x100000000ull / opt_n_threads) * thr_id); // 0 if single thr
+			if(opt_algo != ALGO_SIA)
+				nonceptr[0] = (uint32_t)((0x100000000ull / opt_n_threads) * thr_id); // 0 if single thr
+			else
+			{
+				uint64_t x = (0xffffffffffffffffull / opt_n_threads) * thr_id;
+				nonceptr[0] = (uint32_t)(x & 0xffffffff);
+				nonceptr[1] = (uint32_t)(x >> 32);
+			}
 		}
 		else
 		{
@@ -1636,33 +1652,39 @@ static void *miner_thread(void *userdata)
 		max64 = max(minmax, max64);
 
 		// we can't scan more than uint capacity
-		max64 = min((uint64_t)0xffffffff, max64);
-		start_nonce = nonceptr[0];
+		if(opt_algo != ALGO_SIA)
+			max64 = min((uint64_t)0xffffffff, max64);
+		else
+			max64 = min((0xffffffffffffffffull/1029), max64);
+
+		if(opt_algo != ALGO_SIA)
+			start_nonce = nonceptr[0];
+		else
+			start_nonce = ((uint64_t)nonceptr[1] << 32) + nonceptr[0];
 
 		/* never let small ranges at end */
-		if(end_nonce >= UINT32_MAX - 256)
+		if(opt_algo != ALGO_SIA && end_nonce >= UINT32_MAX - 2048)
 			end_nonce = UINT32_MAX;
 
-		if((max64 + start_nonce) >= end_nonce)
-			max_nonce = (uint32_t)end_nonce;
+		if(max64 >= end_nonce - start_nonce)
+			max_nonce = end_nonce;
 		else
-			max_nonce = (uint32_t)(max64 + start_nonce);
+			max_nonce = max64 + start_nonce;
 
 		// todo: keep it rounded for gpu threads ?
-
 		work.scanned_from = start_nonce;
 
 		if(opt_debug)
-			applog(LOG_DEBUG, "GPU #%d: start=%08x end=%08x range=%08x",
-			device_map[thr_id], start_nonce, max_nonce, (max_nonce - start_nonce + 1));
+			if(opt_algo != ALGO_SIA)
+				applog(LOG_DEBUG, "GPU #%d: start=%08x end=%08x range=%08x", device_map[thr_id], start_nonce, max_nonce, max_nonce - start_nonce + 1);
+			else
+				applog(LOG_DEBUG, "GPU #%d: start=%016llx end=%016llx range=%016llx", device_map[thr_id], start_nonce, max_nonce, max_nonce - start_nonce + 1);
 
 		hashes_done = 0;
 		gettimeofday(&tv_start, NULL);
 		uint32_t databackup;
 		if(opt_algo != ALGO_SIA)
 			databackup = nonceptr[2];
-		else
-			databackup = nonceptr[12];
 
 		if(!stop_mining)
 			mining_has_stopped[thr_id] = false;
@@ -1681,152 +1703,125 @@ static void *miner_thread(void *userdata)
 		{
 
 		case ALGO_KECCAK:
-			rc = scanhash_keccak256(thr_id, work.data, work.target,
-									max_nonce, &hashes_done);
+			rc = scanhash_keccak256(thr_id, work.data, work.target, (uint32_t)max_nonce, &hashes_done);
 			break;
 
 		case ALGO_DEEP:
-			rc = scanhash_deep(thr_id, work.data, work.target,
-							   max_nonce, &hashes_done);
+			rc = scanhash_deep(thr_id, work.data, work.target, (uint32_t)max_nonce, &hashes_done);
 			break;
 
 		case ALGO_DOOM:
 		case ALGO_LUFFA_DOOM:
-			rc = scanhash_doom(thr_id, work.data, work.target,
-							   max_nonce, &hashes_done);
+			rc = scanhash_doom(thr_id, work.data, work.target, (uint32_t)max_nonce, &hashes_done);
 			break;
 
 		case ALGO_C11:
-			rc = scanhash_c11(thr_id, work.data, work.target,
-							  max_nonce, &hashes_done);
+			rc = scanhash_c11(thr_id, work.data, work.target, (uint32_t)max_nonce, &hashes_done);
 			break;
 
 		case ALGO_FUGUE256:
-			rc = scanhash_fugue256(thr_id, work.data, work.target,
-								   max_nonce, &hashes_done);
+			rc = scanhash_fugue256(thr_id, work.data, work.target, (uint32_t)max_nonce, &hashes_done);
 			break;
 
 		case ALGO_GROESTL:
 		case ALGO_DMD_GR:
-			rc = scanhash_groestlcoin(thr_id, work.data, work.target,
-									  max_nonce, &hashes_done);
+			rc = scanhash_groestlcoin(thr_id, work.data, work.target, (uint32_t)max_nonce, &hashes_done);
 			break;
 
 		case ALGO_MYR_GR:
-			rc = scanhash_myriad(thr_id, work.data, work.target,
-								 max_nonce, &hashes_done);
+			rc = scanhash_myriad(thr_id, work.data, work.target, (uint32_t)max_nonce, &hashes_done);
 			break;
 
 		case ALGO_JACKPOT:
-			rc = scanhash_jackpot(thr_id, work.data, work.target,
-								  max_nonce, &hashes_done);
+			rc = scanhash_jackpot(thr_id, work.data, work.target, (uint32_t)max_nonce, &hashes_done);
 			break;
 
 		case ALGO_QUARK:
-			rc = scanhash_quark(thr_id, work.data, work.target,
-								max_nonce, &hashes_done);
+			rc = scanhash_quark(thr_id, work.data, work.target, (uint32_t)max_nonce, &hashes_done);
 			break;
 
 		case ALGO_QUBIT:
-			rc = scanhash_qubit(thr_id, work.data, work.target,
-								max_nonce, &hashes_done);
+			rc = scanhash_qubit(thr_id, work.data, work.target, (uint32_t)max_nonce, &hashes_done);
 			break;
 
 
 		case ALGO_BITCOIN:
-			rc = scanhash_bitcoin(thr_id, work.data, work.target,
-								  max_nonce, &hashes_done);
+			rc = scanhash_bitcoin(thr_id, work.data, work.target, (uint32_t)max_nonce, &hashes_done);
 			break;
 
 		case ALGO_VANILLA:
-			rc = scanhash_blake256(thr_id, work.data, work.target,
-														 max_nonce, &hashes_done, 8);
+			rc = scanhash_blake256(thr_id, work.data, work.target, (uint32_t)max_nonce, &hashes_done, 8);
 			break;
 
 		case ALGO_BLAKECOIN:
-			rc = scanhash_blake256(thr_id, work.data, work.target,
-								   max_nonce, &hashes_done, 8);
+			rc = scanhash_blake256(thr_id, work.data, work.target, (uint32_t)max_nonce, &hashes_done, 8);
 			break;
 
 		case ALGO_BLAKE:
-			rc = scanhash_blake256(thr_id, work.data, work.target,
-								   max_nonce, &hashes_done, 14);
+			rc = scanhash_blake256(thr_id, work.data, work.target, (uint32_t)max_nonce, &hashes_done, 14);
 			break;
 
 		case ALGO_FRESH:
-			rc = scanhash_fresh(thr_id, work.data, work.target,
-								max_nonce, &hashes_done);
+			rc = scanhash_fresh(thr_id, work.data, work.target, (uint32_t)max_nonce, &hashes_done);
 			break;
 
 		case ALGO_LYRA2v2:
-			rc = scanhash_lyra2v2(thr_id, work.data, work.target,
-				max_nonce, &hashes_done);
+			rc = scanhash_lyra2v2(thr_id, work.data, work.target, (uint32_t)max_nonce, &hashes_done);
 			break;
 
 		case ALGO_NIST5:
-			rc = scanhash_nist5(thr_id, work.data, work.target,
-								max_nonce, &hashes_done);
+			rc = scanhash_nist5(thr_id, work.data, work.target, (uint32_t)max_nonce, &hashes_done);
 			break;
 
 		case ALGO_PENTABLAKE:
-			rc = scanhash_pentablake(thr_id, work.data, work.target,
-									 max_nonce, &hashes_done);
+			rc = scanhash_pentablake(thr_id, work.data, work.target, (uint32_t)max_nonce, &hashes_done);
 			break;
 
 		case ALGO_SKEIN:
-			rc = scanhash_skeincoin(thr_id, work.data, work.target,
-									max_nonce, &hashes_done);
+			rc = scanhash_skeincoin(thr_id, work.data, work.target, (uint32_t)max_nonce, &hashes_done);
 			break;
 
 		case ALGO_S3:
-			rc = scanhash_s3(thr_id, work.data, work.target,
-							 max_nonce, &hashes_done);
+			rc = scanhash_s3(thr_id, work.data, work.target, (uint32_t)max_nonce, &hashes_done);
 			break;
 
 		case ALGO_WHC:
-			rc = scanhash_whc(thr_id, work.data, work.target,
-							  max_nonce, &hashes_done);
+			rc = scanhash_whc(thr_id, work.data, work.target, (uint32_t)max_nonce, &hashes_done);
 			break;
 
 		case ALGO_WHCX:
-			rc = scanhash_whirlpoolx(thr_id, work.data, work.target,
-									 max_nonce, &hashes_done);
+			rc = scanhash_whirlpoolx(thr_id, work.data, work.target, (uint32_t)max_nonce, &hashes_done);
 			break;
 
 		case ALGO_X11:
-			rc = scanhash_x11(thr_id, work.data, work.target,
-							  max_nonce, &hashes_done);
+			rc = scanhash_x11(thr_id, work.data, work.target, (uint32_t)max_nonce, &hashes_done);
 			break;
 
 		case ALGO_X13:
-			rc = scanhash_x13(thr_id, work.data, work.target,
-							  max_nonce, &hashes_done);
+			rc = scanhash_x13(thr_id, work.data, work.target, (uint32_t)max_nonce, &hashes_done);
 			break;
 
 		case ALGO_X14:
-			rc = scanhash_x14(thr_id, work.data, work.target,
-							  max_nonce, &hashes_done);
+			rc = scanhash_x14(thr_id, work.data, work.target, (uint32_t)max_nonce, &hashes_done);
 			break;
 
 		case ALGO_X15:
-			rc = scanhash_x15(thr_id, work.data, work.target,
-							  max_nonce, &hashes_done);
+			rc = scanhash_x15(thr_id, work.data, work.target, (uint32_t)max_nonce, &hashes_done);
 			break;
 
 		case ALGO_X17:
-			rc = scanhash_x17(thr_id, work.data, work.target,
-							  max_nonce, &hashes_done);
+			rc = scanhash_x17(thr_id, work.data, work.target, (uint32_t)max_nonce, &hashes_done);
 			break;
 
 		case ALGO_NEO:
 			if(!have_stratum && work.datasize == 128)
-				rc = scanhash_neoscrypt(true, thr_id, work.data, work.target, max_nonce, &hashes_done);
+				rc = scanhash_neoscrypt(true, thr_id, work.data, work.target, (uint32_t)max_nonce, &hashes_done);
 			else
-				rc = scanhash_neoscrypt(have_stratum, thr_id, work.data, work.target, max_nonce, &hashes_done);
+				rc = scanhash_neoscrypt(have_stratum, thr_id, work.data, work.target, (uint32_t)max_nonce, &hashes_done);
 			break;
 
 		case ALGO_SIA:
-			rc = scanhash_sia(thr_id, work.data, work.target, max_nonce, &hashes_done);
+			rc = scanhash_sia(thr_id, work.data, work.target, max_nonce, &hashes_done, siaresults);
 			break;
 
 		default:
@@ -1837,16 +1832,17 @@ static void *miner_thread(void *userdata)
 		/* record scanhash elapsed time */
 		gettimeofday(&tv_end, NULL);
 		if(rc && opt_debug)
-			applog(LOG_NOTICE, CL_CYN "found => %08x" CL_GRN " %08x", nonceptr[0], swab32(nonceptr[0])); // data[19]
 		if(opt_algo != ALGO_SIA)
 		{
+			applog(LOG_NOTICE, CL_CYN "found => %08x" CL_GRN " %08x", nonceptr[0], swab32(nonceptr[0])); // data[19]
 			if(rc > 1 && opt_debug)
 				applog(LOG_NOTICE, CL_CYN "found => %08x" CL_GRN " %08x", nonceptr[2], swab32(nonceptr[2])); // data[21]
 		}
 		else
 		{
+			applog(LOG_NOTICE, CL_CYN "found => %016llx" CL_GRN " %016llx", siaresults[0], swab64(siaresults[0])); 
 			if(rc > 1 && opt_debug)
-				applog(LOG_NOTICE, CL_CYN "found => %08x" CL_GRN " %08x", nonceptr[12], swab32(nonceptr[12])); // data[21]
+				applog(LOG_NOTICE, CL_CYN "found => %016llx" CL_GRN " %016llx", siaresults[1], swab64(siaresults[1]));
 		}
 		timeval_subtract(&diff, &tv_end, &tv_start);
 
@@ -1875,23 +1871,36 @@ static void *miner_thread(void *userdata)
 			/* store thread hashrate */
 			if(dtime > 0.0)
 			{
-				pthread_mutex_lock(&stats_lock);
-				thr_hashrates[thr_id] = hashes_done / dtime;
-				thr_hashrates[thr_id] *= rate_factor;
-				stats_remember_speed(thr_id, hashes_done, thr_hashrates[thr_id], (uint8_t)rc, work.height);
-				pthread_mutex_unlock(&stats_lock);
+				if(opt_algo != ALGO_SIA)
+				{
+					pthread_mutex_lock(&stats_lock);
+					thr_hashrates[thr_id] = (double)hashes_done / dtime;
+					thr_hashrates[thr_id] *= rate_factor;
+					stats_remember_speed(thr_id, hashes_done, thr_hashrates[thr_id], (uint8_t)rc, work.height);
+					pthread_mutex_unlock(&stats_lock);
+				}
+				else
+				{
+					pthread_mutex_lock(&stats_lock);
+					thr_hashrates[thr_id] = (double)hashes_done / 1029.0 / dtime;
+					thr_hashrates[thr_id] *= rate_factor;
+					stats_remember_speed(thr_id, hashes_done / 1029, thr_hashrates[thr_id], (uint8_t)rc, work.height);
+					pthread_mutex_unlock(&stats_lock);
+				}
 			}
 		}
 
 		work.scanned_to = start_nonce + hashes_done - 1;
-		if(opt_debug && opt_benchmark)
+		if(opt_debug)
 		{
 			// to debug nonce ranges
-			applog(LOG_DEBUG, "GPU #%d:  ends=%08x range=%08x", device_map[thr_id],
-				   start_nonce + hashes_done - 1, hashes_done);
+			if(opt_algo != ALGO_SIA)
+				applog(LOG_DEBUG, "GPU #%d:  ends=%08x range=%08x", device_map[thr_id], start_nonce + hashes_done - 1, hashes_done);
+			else
+				applog(LOG_DEBUG, "GPU #%d:  ends=%016llx range=%016llx", device_map[thr_id], start_nonce + hashes_done - 1, hashes_done);
 		}
 
-		if(check_dups)
+		if(opt_algo != ALGO_SIA && check_dups)
 			hashlog_remember_scan_range(&work);
 
 		if(!opt_quiet && loopcnt > 0)
@@ -1931,10 +1940,8 @@ static void *miner_thread(void *userdata)
 				nonceptr[2] = databackup;
 			}
 			else
-			{
-				found2 = nonceptr[12];
-				nonceptr[12] = databackup;
-			}
+				*((uint64_t*)nonceptr) = siaresults[0];
+
 			if(!submit_work(mythr, &work))
 				break;
 
@@ -1952,12 +1959,18 @@ static void *miner_thread(void *userdata)
 			// second nonce found, submit too (on pool only!)
 			if(rc > 1)
 			{
-				nonceptr[0] = found2;
+				if(opt_algo != ALGO_SIA)
+					nonceptr[0] = found2;
+				else
+					*((uint64_t*)nonceptr) = siaresults[1];
 				if(!submit_work(mythr, &work))
 					break;
 			}
 		}
-		nonceptr[0] = start_nonce + hashes_done;
+		if(opt_algo != ALGO_SIA)
+			nonceptr[0] = (uint32_t)(start_nonce + hashes_done);
+		else
+			*((uint64_t*)nonceptr) = start_nonce + hashes_done;
 
 		loopcnt++;
 	}
