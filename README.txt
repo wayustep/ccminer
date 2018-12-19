@@ -6,20 +6,20 @@ If you find this tool useful and like to support its continued
           development, then consider a donation.
 
 KlausT:
-  BTC 1QDwdLPrPYSoPqS7pB2kGG84YX6hEcQ4JN
-      bc1qpt7qnvjaqu8t24xqajgyfqan2v00hrdgrut0zq
-  BCH 1AH1u7B4KtDTUBgmT6NrXyahNEgTac3fL7
-      qpjupzv3nevqzlkyxx5d736xt78jvet7usm479kl73
+  BTC 1Lfpoh1z2ikNhLwY5nB8LPDcXK9onciK7n
+      b6aefd7c1513dff8b3d188d20d379498be8f9f83
+  BCH bitcoincash:qp85dztm50l8x0rdkr8laartkcygjpkkxg0qqf93kf
+      qz9lu50hz8v7gvr7qdags0t5qrn93u7ungupq3pgah
 
 tpruvot:
-  BTC 1AJdfCpLWPNoAMDfHF1wD5y8VgKSSTHxPo
+  BTC 1Lfpoh1z2ikNhLwY5nB8LPDcXK9onciK7n
 
 DJM34:
-  BTC donation address: 1NENYmxwZGHsKFmyjTc5WferTn5VTFb7Ze
+  BTC donation address: 1Lfpoh1z2ikNhLwY5nB8LPDcXK9onciK7n
 
 cbuchner:
-  LTC donation address: LKS1WDKGED647msBQfLBHV3Ls8sveGncnm
-  BTC donation address: 16hJF5mceSojnTD3ZTUDqdRhDyPJzoRakM
+  LTC donation address: MW36DmTbTDH1vcRTqY34npTnzaLL6Em8ME
+  BTC donation address: 1Lfpoh1z2ikNhLwY5nB8LPDcXK9onciK7n
 
 ***************************************************************
 
